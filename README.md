@@ -24,10 +24,12 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 
 ## 下载安装
 
-| 平台 | 架构 | 安装包 |
+| 平台 | 架构 | 安装包（点击直接下载） |
 | --- | --- | --- |
-| **macOS** | Apple Silicon (arm64) | `MarkEasy-1.0.0-arm64.dmg` / `MarkEasy-1.0.0-arm64-mac.zip` |
-| **Windows** 10 / 11 | x64 | `MarkEasy-Setup-1.0.0-x64.exe`（安装版） / `MarkEasy-1.0.0-win-x64.zip`（免安装，解压即用） |
+| **macOS** | Apple Silicon (arm64) | [MarkEasy-1.0.0-arm64.dmg](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-1.0.0-arm64.dmg) / [MarkEasy-1.0.0-arm64-mac.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-1.0.0-arm64-mac.zip) |
+| **Windows** 10 / 11 | x64 | [MarkEasy-Setup-1.0.0-x64.exe](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-Setup-1.0.0-x64.exe)（安装版） / [MarkEasy-1.0.0-win-x64.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-1.0.0-win-x64.zip)（免安装，解压即用） |
+
+历史版本与更新说明见 [Releases](https://github.com/MarvenGong/markeasy/releases)。
 
 > 安装包暂未使用开发者证书签名：
 > - **macOS**：首次打开时在「应用程序」中 **右键 → 打开**，或在「系统设置 → 隐私与安全性」中点击「仍要打开」。
