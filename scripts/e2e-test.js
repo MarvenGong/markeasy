@@ -265,6 +265,19 @@ module.exports = async function ({ app, win }) {
     const hl = await js(`!!document.querySelector('#preview pre code.hljs .hljs-keyword')`);
     check('预览：代码块语法高亮', hl);
 
+    // Windows 风格 CRLF 文件：打开不算修改，保存后保持 CRLF
+    const crlfFile = path.join(root, 'windows.md');
+    fs.writeFileSync(crlfFile, '# Win\r\n\r\n第一行\r\n');
+    await js(`window.__markeasy.openFile(${JSON.stringify(crlfFile)})`);
+    await sleep(300);
+    const crlfDirty = await js(`window.__markeasy.state.dirty`);
+    await js(`(() => { const cm = window.__markeasy.editor.cm; cm.replaceRange('第二行\\n', { line: cm.lastLine(), ch: 0 }); })()`);
+    await js(`window.__markeasy.save()`);
+    await sleep(300);
+    const crlfDisk = fs.readFileSync(crlfFile, 'utf8');
+    check('CRLF 文件打开后不显示为已修改', crlfDirty === false);
+    check('CRLF 文件保存后保持 CRLF 换行', crlfDisk === '# Win\r\n\r\n第一行\r\n第二行\r\n', JSON.stringify(crlfDisk));
+
     // 截图
     await js(`window.__markeasy.openFile(${JSON.stringify(created)})`);
     await sleep(600);

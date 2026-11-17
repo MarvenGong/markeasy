@@ -6,9 +6,11 @@
   const { path, isImage } = ME;
 
   const FONT_STACKS = {
-    mono: '"SF Mono", "JetBrains Mono", Menlo, Monaco, "PingFang SC", monospace',
-    system: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", sans-serif',
-    serif: '"Songti SC", "STSong", "Noto Serif CJK SC", Georgia, serif'
+    // 依次为 macOS / Windows / Linux 的常见字体，按顺序回退
+    mono: '"SF Mono", Menlo, "Cascadia Mono", Consolas, "JetBrains Mono", "PingFang SC", "Microsoft YaHei", monospace',
+    system:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif',
+    serif: '"Songti SC", STSong, SimSun, "Noto Serif CJK SC", Georgia, serif'
   };
 
   class Editor {
@@ -29,7 +31,7 @@
         indentWithTabs: false,
         styleActiveLine: { nonEmpty: false },
         matchBrackets: true,
-        placeholder: '开始输入 Markdown…  直接 ⌘V 粘贴截图即可插入图片',
+        placeholder: `开始输入 Markdown…  直接 ${ME.platform.shortcut('Mod+V')} 粘贴截图即可插入图片`,
         spellcheck: false,
         autocorrect: false,
         extraKeys: {
@@ -39,7 +41,8 @@
             else cm.replaceSelection(' '.repeat(cm.getOption('indentUnit')), 'end');
           },
           'Shift-Tab': 'indentLess',
-          'Cmd-/': () => this.format('quote')
+          'Cmd-/': () => this.format('quote'),
+          'Ctrl-/': () => this.format('quote')
         }
       });
 
@@ -161,7 +164,7 @@
         if (result && result.markdown) {
           e.preventDefault();
           this.insertBlock(result.markdown);
-          ME.toast(`已粘贴为 Markdown 表格（${result.rows} 行 × ${result.cols} 列），⇧⌘V 可粘贴为纯文本`, 'success', 2600);
+          ME.toast(`已粘贴为 Markdown 表格（${result.rows} 行 × ${result.cols} 列），${ME.platform.shortcut('Mod+Shift+V')} 可粘贴为纯文本`, 'success', 2600);
           return;
         }
         if (result && typeof result.plain === 'string') {

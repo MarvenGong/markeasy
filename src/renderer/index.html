@@ -23,10 +23,10 @@
         <div class="sidebar-header drag">
           <div class="sidebar-title" id="folder-name" title="">未打开文件夹</div>
           <div class="sidebar-actions no-drag">
-            <button class="icon-btn" id="btn-new-file" title="新建 Markdown 文件 (⌘N)" data-icon="filePlus"></button>
-            <button class="icon-btn" id="btn-new-folder" title="新建文件夹 (⇧⌘N)" data-icon="folderPlus"></button>
+            <button class="icon-btn" id="btn-new-file" title="新建 Markdown 文件" data-shortcut="Mod+N" data-icon="filePlus"></button>
+            <button class="icon-btn" id="btn-new-folder" title="新建文件夹" data-shortcut="Mod+Shift+N" data-icon="folderPlus"></button>
             <button class="icon-btn" id="btn-collapse" title="全部折叠" data-icon="collapse"></button>
-            <button class="icon-btn" id="btn-open-folder" title="打开文件夹 (⌘O)" data-icon="folderOpen"></button>
+            <button class="icon-btn" id="btn-open-folder" title="打开文件夹" data-shortcut="Mod+O" data-icon="folderOpen"></button>
           </div>
         </div>
         <div id="tree" class="tree" tabindex="0" role="tree"></div>
@@ -40,18 +40,18 @@
       <!-- 主区域 -->
       <main class="main">
         <header class="toolbar drag">
-          <button class="icon-btn no-drag" id="btn-toggle-sidebar" title="切换侧边栏 (⌘\)" data-icon="sidebar"></button>
+          <button class="icon-btn no-drag" id="btn-toggle-sidebar" title="切换侧边栏" data-shortcut="Mod+\" data-icon="sidebar"></button>
           <div class="doc-title">
             <span id="doc-name" class="doc-name"></span>
             <span id="doc-dirty" class="doc-dirty" title="未保存"></span>
             <span id="doc-path" class="doc-path"></span>
           </div>
           <div class="segmented no-drag" id="view-mode">
-            <button data-mode="edit" title="仅编辑 (⌘1)">编辑</button>
-            <button data-mode="split" title="编辑 + 预览 (⌘2)">分栏</button>
-            <button data-mode="preview" title="仅预览 (⌘3)">预览</button>
+            <button data-mode="edit" title="仅编辑" data-shortcut="Mod+1">编辑</button>
+            <button data-mode="split" title="编辑 + 预览" data-shortcut="Mod+2">分栏</button>
+            <button data-mode="preview" title="仅预览" data-shortcut="Mod+3">预览</button>
           </div>
-          <button class="icon-btn no-drag" id="btn-settings" title="设置 (⌘,)" data-icon="settings"></button>
+          <button class="icon-btn no-drag" id="btn-settings" title="设置" data-shortcut="Mod+," data-icon="settings"></button>
         </header>
 
         <section id="workspace" class="workspace mode-split">
@@ -71,9 +71,9 @@
                 <button class="btn" id="welcome-new">新建文件</button>
               </div>
               <ul class="welcome-tips">
-                <li><kbd>⌘</kbd><kbd>N</kbd> 新建文件，或在目录上右键</li>
-                <li><kbd>⌘</kbd><kbd>V</kbd> 直接粘贴截图，图片自动存入 assets 目录</li>
-                <li><kbd>⌘</kbd><kbd>,</kbd> 打开设置</li>
+                <li><span data-kbd="Mod+N"></span> 新建文件，或在目录上右键</li>
+                <li id="tip-paste"><span data-kbd="Mod+V"></span> 直接粘贴截图，图片自动存入 assets 目录</li>
+                <li><span data-kbd="Mod+,"></span> 打开设置</li>
               </ul>
             </div>
           </div>
@@ -121,15 +121,15 @@
             <label class="row">
               <span>编辑器字体</span>
               <select name="editorFontFamily">
-                <option value="mono">等宽（SF Mono / Menlo）</option>
-                <option value="system">系统无衬线（苹方）</option>
+                <option value="mono">等宽字体</option>
+                <option value="system">无衬线（系统默认）</option>
                 <option value="serif">衬线（宋体）</option>
               </select>
             </label>
             <label class="row">
               <span>预览字体</span>
               <select name="previewFontFamily">
-                <option value="system">系统无衬线（苹方）</option>
+                <option value="system">无衬线（系统默认）</option>
                 <option value="serif">衬线（宋体）</option>
               </select>
             </label>
@@ -202,7 +202,7 @@
         </div>
         <span id="iv-counter" class="iv-meta"></span>
         <button class="btn" id="iv-open">用默认应用打开</button>
-        <button class="btn" id="iv-reveal">在 Finder 中显示</button>
+        <button class="btn" id="iv-reveal" data-platform-text="在 {fm} 中显示">在 Finder 中显示</button>
         <button class="icon-btn" id="iv-close" title="关闭 (Esc)" data-icon="close"></button>
       </header>
       <div class="iv-body" tabindex="-1" autofocus>

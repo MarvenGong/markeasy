@@ -1,12 +1,12 @@
 :root {
   color-scheme: light dark;
-  --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
   --editor-font-size: 15px;
   --preview-font-size: 16px;
   --editor-line-height: 1.7;
   --preview-line-height: 1.7;
-  --editor-font: "SF Mono", Menlo, monospace;
-  --preview-font: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  --editor-font: "SF Mono", Menlo, "Cascadia Mono", Consolas, monospace;
+  --preview-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 
   --bg: #ffffff;
   --bg-soft: #f7f7f8;
@@ -76,7 +76,8 @@ body.resizing * {
   cursor: col-resize !important;
 }
 
-.drag {
+/* 仅 macOS 使用隐藏式标题栏，工具栏可拖动窗口；Windows / Linux 使用系统标题栏 */
+.platform-darwin .drag {
   -webkit-app-region: drag;
 }
 .no-drag,
@@ -134,7 +135,7 @@ button {
   flex: none;
   display: flex;
   align-items: center;
-  padding: 0 8px 0 82px; /* 为红绿灯按钮留出空间 */
+  padding: 0 8px 0 12px;
   gap: 4px;
 }
 
@@ -303,7 +304,11 @@ button {
   padding: 0 10px;
   border-bottom: 1px solid var(--border);
 }
-.app.sidebar-hidden .toolbar {
+/* macOS：为左上角红绿灯按钮留出空间 */
+.platform-darwin .sidebar-header {
+  padding-left: 82px;
+}
+.platform-darwin .app.sidebar-hidden .toolbar {
   padding-left: 82px;
 }
 

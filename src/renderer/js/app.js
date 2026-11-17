@@ -12,7 +12,8 @@
     settings: null,
     root: null,
     file: null, // 当前打开文件的绝对路径
-    saved: '', // 磁盘上的内容（最近一次保存/读取）
+    saved: '', // 磁盘上的内容（最近一次保存/读取，换行已统一为 \n）
+    eol: '\n', // 文件原本的换行风格，保存时还原（Windows 常见 \r\n）
     dirty: false,
     saving: null // 正在进行中的保存 Promise
   };
@@ -80,8 +81,7 @@
     if (prev.imageFolder !== undefined && prev.imageFolder !== s.imageFolder) {
       ME.toast(`新粘贴的图片将保存到 “${s.imageFolder}/” 目录`, 'info');
     }
-    document.querySelector('.welcome-tips li:nth-child(2)').innerHTML =
-      `<kbd>⌘</kbd><kbd>V</kbd> 直接粘贴截图，图片自动存入 ${ME.escapeHtml(s.imageFolder)} 目录`;
+    $('tip-paste').innerHTML = `${ME.platform.kbd('Mod+V')} 直接粘贴截图，图片自动存入 ${ME.escapeHtml(s.imageFolder)} 目录`;
   }
 
   /* ================================================================ 布局 */
@@ -202,7 +202,7 @@
     if (content === state.saved && !state.dirty) return true;
     setSaveStatus('保存中…');
     state.saving = api.fs
-      .writeFile(file, content)
+      .writeFile(file, ME.eol.restore(content, state.eol))
       .then(() => {
         if (state.file === file) {
           state.saved = content;
@@ -256,24 +256,28 @@
       ME.toast('只能打开 Markdown 文件（.md / .markdown）', 'warn');
       return;
     }
-    if (!force && file === state.file) {
+    if (!force && state.file && path.equals(file, state.file)) {
       editor.focus();
       return;
     }
     if (!(await ensureSaved())) return;
     let content;
+    let eolStyle = '\n';
     try {
       content = await api.fs.readFile(file);
+      eolStyle = ME.eol.detect(content);
+      content = ME.eol.normalize(content);
     } catch (err) {
       ME.toast('打开失败：' + err.message, 'error');
       return;
     }
-    // 文件不在当前根目录下（如从 Finder 双击打开）时，把其所在目录设为根目录
+    // 文件不在当前根目录下（如从 Finder / 资源管理器双击打开）时，把其所在目录设为根目录
     if (!state.root || !path.isInside(file, state.root)) {
       await setRoot(path.dirname(file), { keepFile: true });
     }
     state.file = file;
     state.saved = content;
+    state.eol = eolStyle;
     state.dirty = false;
     editor.setReadOnly(false);
     editor.load(content);
@@ -308,7 +312,7 @@
 
   async function onExternalChange(changed) {
     await tree.refresh(changed);
-    if (!state.file || !changed.includes(state.file)) return;
+    if (!state.file || !changed.some((c) => path.equals(c, state.file))) return;
     let exists = true;
     try {
       exists = await api.fs.exists(state.file);
@@ -320,7 +324,8 @@
       return;
     }
     if (state.saving) return;
-    const disk = await api.fs.readFile(state.file).catch(() => null);
+    let disk = await api.fs.readFile(state.file).catch(() => null);
+    if (disk !== null) disk = ME.eol.normalize(disk);
     if (disk === null || disk === state.saved || disk === editor.getValue()) {
       if (disk !== null) state.saved = disk;
       return;
@@ -434,9 +439,10 @@
   }
 
   async function trashItem(p, isDir) {
-    const idx = await ME.ask(`确定要将 “${path.basename(p)}” 移到废纸篓吗？`, {
-      detail: isDir ? '该文件夹及其中所有内容都会被移到废纸篓。' : '可以在废纸篓中恢复。',
-      buttons: ['移到废纸篓', '取消'],
+    const trash = ME.platform.trash;
+    const idx = await ME.ask(`确定要将 “${path.basename(p)}” 移到${trash}吗？`, {
+      detail: isDir ? `该文件夹及其中所有内容都会被移到${trash}。` : `可以在${trash}中恢复。`,
+      buttons: [`移到${trash}`, '取消'],
       danger: true
     });
     if (idx !== 0) return;
@@ -598,7 +604,9 @@
   /* ================================================================ 启动 */
 
   async function init() {
+    document.body.classList.add('platform-' + api.platform);
     ME.mountIcons();
+    ME.localizePlatform();
     state.settings = await api.settings.get();
 
     editor = new ME.Editor($('editor'), {

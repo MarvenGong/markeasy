@@ -18,6 +18,15 @@ const fsService = require('./fsService');
 const { buildAppMenu } = require('./menu');
 
 const isDev = process.argv.includes('--dev');
+const isMac = process.platform === 'darwin';
+const isWin = process.platform === 'win32';
+
+// 平台相关文案
+const FM = isMac ? 'Finder' : isWin ? '资源管理器' : '文件管理器';
+const TRASH = isMac ? '废纸篓' : '回收站';
+const MD_EXT_RE = /\.(md|markdown|mdown|mkd)$/i;
+
+const ICON_PNG = path.join(__dirname, '..', '..', 'build', 'icon.png');
 
 // 允许通过环境变量隔离用户数据目录（自动化测试用），必须在 ready 之前设置
 if (process.env.MARKEASY_USER_DATA) app.setPath('userData', process.env.MARKEASY_USER_DATA);
@@ -45,8 +54,10 @@ function createWindow() {
     minWidth: 760,
     minHeight: 480,
     title: 'MarkEasy',
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 14, y: 14 },
+    // macOS：隐藏标题栏、红绿灯嵌入工具栏；Windows / Linux：使用系统原生标题栏与菜单栏
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 14 } }
+      : { autoHideMenuBar: false, ...(app.isPackaged ? {} : { icon: ICON_PNG }) }),
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1f22' : '#ffffff',
     show: false,
     webPreferences: {
@@ -207,9 +218,10 @@ function registerIpc() {
         title: '打开文件夹',
         properties: ['openDirectory', 'createDirectory']
       });
-      return r.canceled ? null : r.filePaths[0];
+      return r.canceled ? null : canonical(r.filePaths[0]);
     })
   );
+
 
   // 原生询问对话框，返回被点击按钮的下标；最后一个按钮视为“取消”
   ipcMain.handle(
@@ -282,7 +294,7 @@ function registerIpc() {
             item('新建文件夹', 'new-folder'),
             sep,
             item('刷新', 'refresh'),
-            item('在 Finder 中显示', 'reveal'),
+            item(`在 ${FM} 中显示`, 'reveal'),
             item('复制路径', 'copy-path')
           ];
         } else if (kind === 'dir') {
@@ -291,9 +303,9 @@ function registerIpc() {
             item('新建文件夹', 'new-folder'),
             sep,
             item('重命名…', 'rename'),
-            item('移到废纸篓', 'trash'),
+            item(`移到${TRASH}`, 'trash'),
             sep,
-            item('在 Finder 中显示', 'reveal'),
+            item(`在 ${FM} 中显示`, 'reveal'),
             item('复制路径', 'copy-path')
           ];
         } else if (kind === 'image') {
@@ -302,9 +314,9 @@ function registerIpc() {
             item('用默认应用打开', 'open-external'),
             sep,
             item('重命名…', 'rename'),
-            item('移到废纸篓', 'trash'),
+            item(`移到${TRASH}`, 'trash'),
             sep,
-            item('在 Finder 中显示', 'reveal'),
+            item(`在 ${FM} 中显示`, 'reveal'),
             item('复制路径', 'copy-path')
           ];
         } else if (kind === 'file') {
@@ -312,9 +324,9 @@ function registerIpc() {
             item('用默认应用打开', 'open-external'),
             sep,
             item('重命名…', 'rename'),
-            item('移到废纸篓', 'trash'),
+            item(`移到${TRASH}`, 'trash'),
             sep,
-            item('在 Finder 中显示', 'reveal'),
+            item(`在 ${FM} 中显示`, 'reveal'),
             item('复制路径', 'copy-path')
           ];
         } else {
@@ -322,9 +334,9 @@ function registerIpc() {
             item('打开', 'open'),
             sep,
             item('重命名…', 'rename'),
-            item('移到废纸篓', 'trash'),
+            item(`移到${TRASH}`, 'trash'),
             sep,
-            item('在 Finder 中显示', 'reveal'),
+            item(`在 ${FM} 中显示`, 'reveal'),
             item('复制路径', 'copy-path')
           ];
         }
@@ -340,8 +352,11 @@ function registerIpc() {
     docDirty = !!dirty;
     if (!mainWindow) return;
     mainWindow.setTitle(title || 'MarkEasy');
-    mainWindow.setDocumentEdited(!!dirty);
-    mainWindow.setRepresentedFilename(filePath || '');
+    if (isMac) {
+      // 仅 macOS 提供：关闭按钮上的“未保存”圆点、标题栏文件代理图标
+      mainWindow.setDocumentEdited(!!dirty);
+      mainWindow.setRepresentedFilename(filePath || '');
+    }
   });
 
   ipcMain.on('app:close-now', () => closeNow());
@@ -363,31 +378,79 @@ function runTestHook() {
 
 /* ---------------------------------------------------------------- lifecycle */
 
-app.on('open-file', (e, filePath) => {
-  e.preventDefault();
+/** Windows 上统一成磁盘上的真实大小写，避免与文件树中的路径比较不一致 */
+function canonical(p) {
+  if (!p || !isWin) return p;
+  try {
+    return fs.realpathSync.native(p);
+  } catch (_) {
+    return p;
+  }
+}
+
+function openFileFromOS(filePath) {
+  const p = canonical(filePath);
   if (mainWindow && !mainWindow.webContents.isLoading()) {
-    mainWindow.webContents.send('app:open-file', filePath);
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+    mainWindow.webContents.send('app:open-file', p);
   } else {
-    pendingOpenFile = filePath;
+    pendingOpenFile = p;
     if (app.isReady() && !mainWindow) createWindow();
   }
+}
+
+/** Windows / Linux 通过命令行参数传入要打开的文件（双击 .md、“打开方式”） */
+function fileFromArgv(argv) {
+  const args = argv.slice(app.isPackaged ? 1 : 2);
+  for (const a of args) {
+    if (!a || a.startsWith('-')) continue;
+    if (MD_EXT_RE.test(a) && fs.existsSync(a)) return path.resolve(a);
+  }
+  return null;
+}
+
+// macOS：Finder 双击 / 拖到 Dock 图标
+app.on('open-file', (e, filePath) => {
+  e.preventDefault();
+  openFileFromOS(filePath);
 });
+
+// 单实例（Windows / Linux）：再次双击 .md 时交给已打开的窗口处理
+const gotLock = isMac || app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else if (!isMac) {
+  app.on('second-instance', (_e, argv) => {
+    const f = fileFromArgv(argv);
+    if (f) openFileFromOS(f);
+    else if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+  const initial = fileFromArgv(process.argv);
+  if (initial) pendingOpenFile = canonical(initial);
+}
 
 app.on('before-quit', () => {
   quitting = true;
 });
 
 app.whenReady().then(() => {
+  if (!gotLock) return;
   // 开发模式下 Dock 默认显示 Electron 图标，这里换成应用图标；打包后由 icon.icns 提供
-  if (!app.isPackaged && process.platform === 'darwin' && app.dock) {
+  if (!app.isPackaged && isMac && app.dock) {
     try {
-      app.dock.setIcon(path.join(__dirname, '..', '..', 'build', 'icon.png'));
+      app.dock.setIcon(ICON_PNG);
     } catch (_) {}
   }
+  // Windows 任务栏分组与通知需要与安装包一致的 AppUserModelID
+  if (isWin) app.setAppUserModelId('com.markeasy.app');
   settings = new SettingsStore();
   applyTheme(settings.get().theme);
   registerIpc();
-  Menu.setApplicationMenu(buildAppMenu({ sendMenuAction, isDev }));
+  Menu.setApplicationMenu(buildAppMenu({ sendMenuAction, isDev, showAbout: () => aboutDialog() }));
   createWindow();
 
   app.on('activate', () => {
@@ -396,5 +459,16 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin' || quitting) app.quit();
+  if (!isMac || quitting) app.quit();
 });
+
+function aboutDialog() {
+  if (isMac) return app.showAboutPanel();
+  return dialog.showMessageBox(mainWindow || undefined, {
+    type: 'info',
+    title: `关于 ${app.name}`,
+    message: `${app.name} ${app.getVersion()}`,
+    detail: `本地 Markdown 编辑与预览工具\n\nElectron ${process.versions.electron} · Chromium ${process.versions.chrome} · Node ${process.versions.node}`,
+    icon: app.isPackaged ? undefined : ICON_PNG
+  });
+}

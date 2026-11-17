@@ -7,48 +7,164 @@
   const MD_EXT = ['.md', '.markdown', '.mdown', '.mkd'];
   const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.avif', '.ico'];
 
-  const path = {
-    sep: '/',
-    basename(p) {
-      const s = String(p || '').replace(/\/+$/, '');
-      return s.slice(s.lastIndexOf('/') + 1);
-    },
-    dirname(p) {
-      const s = String(p || '').replace(/\/+$/, '');
-      const i = s.lastIndexOf('/');
-      if (i <= 0) return '/';
-      return s.slice(0, i);
-    },
-    extname(p) {
-      const b = path.basename(p);
-      const i = b.lastIndexOf('.');
-      return i > 0 ? b.slice(i).toLowerCase() : '';
-    },
-    join(...parts) {
-      return parts
-        .filter(Boolean)
-        .join('/')
-        .replace(/\/{2,}/g, '/');
-    },
-    /** a 是否等于 b 或位于 b 目录之下 */
-    isInside(a, b) {
-      return a === b || a.startsWith(b.endsWith('/') ? b : b + '/');
-    },
-    relative(from, to) {
-      if (path.isInside(to, from)) return to.slice(from.length).replace(/^\//, '');
-      return to;
-    },
-    toFileUrl(p) {
-      return 'file://' + String(p).split('/').map(encodeURIComponent).join('/');
-    },
-    fromFileUrl(u) {
-      try {
-        return decodeURIComponent(new URL(u).pathname);
-      } catch (_) {
-        return '';
-      }
+  /**
+   * 跨平台路径工具。主进程返回的都是系统原生路径：
+   *   macOS / Linux：/Users/a/b.md
+   *   Windows：      C:\Users\a\b.md 或 \\server\share\b.md
+   * 这里只做字符串处理，与 Node 的 path 模块行为保持一致的子集。
+   */
+  function makePath(isWin) {
+    const sep = isWin ? '\\' : '/';
+    const SEP_RE = isWin ? /[\\/]/ : /\//;
+    const isSep = (c) => c === '/' || (isWin && c === '\\');
+
+    /** 根部分：'/'、'C:\'、'\\server\share\'；无根返回 '' */
+    function rootOf(p) {
+      const s = String(p || '');
+      if (!isWin) return s.startsWith('/') ? '/' : '';
+      let m = /^[A-Za-z]:[\\/]?/.exec(s);
+      if (m) return m[0].slice(0, 2) + '\\';
+      m = /^[\\/]{2}[^\\/]+[\\/][^\\/]+[\\/]?/.exec(s);
+      if (m) return m[0].replace(/\//g, '\\').replace(/\\?$/, '\\');
+      return isSep(s[0]) ? '\\' : '';
     }
-  };
+
+    /** 去掉末尾分隔符（根路径保留） */
+    function trimEnd(p) {
+      const s = String(p || '');
+      const root = rootOf(s);
+      let e = s.length;
+      while (e > root.length && isSep(s[e - 1])) e--;
+      return s.slice(0, Math.max(e, root.length)) || s;
+    }
+
+    const key = (p) => (isWin ? trimEnd(p).replace(/\//g, '\\').toLowerCase() : trimEnd(p));
+
+    const api = {
+      sep,
+      isWin,
+      rootOf,
+      isAbsolute(p) {
+        return !!rootOf(p) && (!isWin || /^([A-Za-z]:[\\/]|[\\/]{2})/.test(String(p)));
+      },
+      basename(p) {
+        const s = trimEnd(p);
+        if (s === rootOf(s)) return '';
+        let i = s.length - 1;
+        while (i >= 0 && !isSep(s[i])) i--;
+        return s.slice(i + 1);
+      },
+      dirname(p) {
+        const s = trimEnd(p);
+        const root = rootOf(s);
+        if (!s || s === root) return root || '.';
+        let i = s.length - 1;
+        while (i >= root.length && !isSep(s[i])) i--;
+        if (i < root.length) return root || '.';
+        return trimEnd(s.slice(0, i)) || root;
+      },
+      extname(p) {
+        const b = api.basename(p);
+        const i = b.lastIndexOf('.');
+        return i > 0 ? b.slice(i).toLowerCase() : '';
+      },
+      join(...parts) {
+        const list = parts.filter((x) => x !== undefined && x !== null && x !== '');
+        if (!list.length) return '.';
+        let out = String(list[0]);
+        for (let i = 1; i < list.length; i++) {
+          const seg = String(list[i]).replace(isWin ? /^[\\/]+/ : /^\/+/, '');
+          out = isSep(out[out.length - 1]) ? out + seg : out + sep + seg;
+        }
+        return out;
+      },
+      /** 两个路径是否指向同一位置（Windows 不区分大小写与分隔符） */
+      equals(a, b) {
+        return key(a) === key(b);
+      },
+      /** a 是否等于 b 或位于 b 目录之下 */
+      isInside(a, b) {
+        if (!a || !b) return false;
+        const ka = key(a);
+        const kb = key(b);
+        if (ka === kb) return true;
+        const base = kb.endsWith(sep) ? kb : kb + sep;
+        return ka.startsWith(base);
+      },
+      /** to 相对于 from 的路径（仅处理 to 在 from 之内的情况），统一用 / 便于展示 */
+      relative(from, to) {
+        if (!api.isInside(to, from)) return to;
+        const base = trimEnd(from);
+        return to
+          .slice(base.length)
+          .replace(isWin ? /^[\\/]+/ : /^\/+/, '')
+          .split(SEP_RE)
+          .join('/');
+      },
+      /** 本地路径 → file:// URL（每段做 URL 编码，保留 Windows 盘符） */
+      toFileUrl(p) {
+        let s = String(p || '');
+        if (isWin) {
+          s = s.replace(/\\/g, '/');
+          if (s.startsWith('//')) {
+            // UNC：\\server\share\a → file://server/share/a
+            const parts = s.slice(2).split('/');
+            return 'file://' + parts.map((seg, i) => (i === 0 ? seg : encodeURIComponent(seg))).join('/');
+          }
+          const parts = s.split('/');
+          return 'file:///' + parts.map((seg, i) => (i === 0 && /^[A-Za-z]:$/.test(seg) ? seg : encodeURIComponent(seg))).join('/');
+        }
+        return 'file://' + s.split('/').map(encodeURIComponent).join('/');
+      },
+      /**
+       * 解析 Markdown 中引用的本地资源（图片 / 链接）为绝对路径。
+       * 网络地址、锚点等返回 null。
+       */
+      resolveRef(src, baseDir) {
+        if (!src || src.startsWith('#') || src.startsWith('//')) return null;
+        let clean = String(src);
+        const winAbs = isWin && /^[A-Za-z]:[\\/]/.test(clean);
+        if (!winAbs && /^[a-z][a-z0-9+.-]*:/i.test(clean)) {
+          if (!/^file:/i.test(clean)) return null; // http: mailto: data: ...
+          try {
+            clean = decodeURIComponent(new URL(clean).pathname);
+            if (isWin) clean = clean.replace(/^\/([A-Za-z]:)/, '$1');
+          } catch (_) {
+            return null;
+          }
+        } else {
+          clean = clean.split('#')[0].split('?')[0];
+          try {
+            clean = decodeURIComponent(clean);
+          } catch (_) {}
+        }
+        let root;
+        let rest;
+        if (api.isAbsolute(clean)) {
+          root = rootOf(clean);
+          rest = clean.slice(root.length);
+        } else if (isWin && isSep(clean[0])) {
+          // \foo：相对于当前盘符根目录
+          root = rootOf(baseDir);
+          rest = clean;
+        } else {
+          root = rootOf(baseDir);
+          rest = String(baseDir).slice(root.length) + sep + clean;
+        }
+        const out = [];
+        for (const seg of rest.split(SEP_RE)) {
+          if (!seg || seg === '.') continue;
+          if (seg === '..') out.pop();
+          else out.push(seg);
+        }
+        return root + out.join(sep);
+      }
+    };
+    return api;
+  }
+
+  const IS_WIN = !!(window.api && window.api.platform === 'win32');
+  const path = makePath(IS_WIN);
 
   function isMarkdown(p) {
     return MD_EXT.includes(path.extname(p));
@@ -112,5 +228,94 @@
     });
   }
 
-  Object.assign(ME, { path, isMarkdown, isImage, debounce, escapeHtml, formatTime, countWords, icons, mountIcons });
+  /* ---------------------------------------------------------------- 平台差异 */
+
+  const IS_MAC = !!(window.api && window.api.platform === 'darwin');
+
+  const platform = {
+    isMac: IS_MAC,
+    isWin: IS_WIN,
+    /** 文件管理器名称 */
+    fileManager: IS_MAC ? 'Finder' : IS_WIN ? '资源管理器' : '文件管理器',
+    /** 回收站名称 */
+    trash: IS_MAC ? '废纸篓' : '回收站',
+    /**
+     * 快捷键显示：'Mod+Shift+N' → macOS「⇧⌘N」/ 其它「Ctrl+Shift+N」
+     * Mod = ⌘ / Ctrl，Alt = ⌥ / Alt
+     */
+    shortcut(spec) {
+      const parts = String(spec).split('+');
+      const keyName = parts.pop();
+      const mods = new Set(parts.map((m) => m.toLowerCase()));
+      if (IS_MAC) {
+        let s = '';
+        if (mods.has('ctrl')) s += '⌃';
+        if (mods.has('alt')) s += '⌥';
+        if (mods.has('shift')) s += '⇧';
+        if (mods.has('mod')) s += '⌘';
+        return s + keyName;
+      }
+      const out = [];
+      if (mods.has('mod') || mods.has('ctrl')) out.push('Ctrl');
+      if (mods.has('shift')) out.push('Shift');
+      if (mods.has('alt')) out.push('Alt');
+      out.push(keyName);
+      return out.join('+');
+    },
+    /** 快捷键的 <kbd> 形式 */
+    kbd(spec) {
+      const text = platform.shortcut(spec);
+      const keys = IS_MAC ? Array.from(text.match(/[⌃⌥⇧⌘]|.+$/g) || [text]) : text.split('+');
+      return keys.map((k) => `<kbd>${escapeHtml(k)}</kbd>`).join('');
+    }
+  };
+
+  /**
+   * 把页面上的平台相关文案替换为当前平台写法：
+   *   data-shortcut="Mod+N"       → title 末尾追加 (⌘N) / (Ctrl+N)
+   *   data-kbd="Mod+V"            → 内容替换为 <kbd> 组合
+   *   data-fm-text / data-trash-text：文案中的 {fm} / {trash} 占位符
+   */
+  function localizePlatform(root = document) {
+    root.querySelectorAll('[data-shortcut]').forEach((el) => {
+      const base = el.dataset.titleBase || el.getAttribute('title') || '';
+      el.dataset.titleBase = base;
+      el.title = `${base} (${platform.shortcut(el.dataset.shortcut)})`;
+    });
+    root.querySelectorAll('[data-kbd]').forEach((el) => {
+      el.innerHTML = platform.kbd(el.dataset.kbd);
+    });
+    root.querySelectorAll('[data-platform-text]').forEach((el) => {
+      el.textContent = el.dataset.platformText.replace(/\{fm\}/g, platform.fileManager).replace(/\{trash\}/g, platform.trash);
+    });
+  }
+
+  /** 统一换行符：编辑器内部始终用 \n，保存时还原文件原本的换行风格 */
+  const eol = {
+    detect(text) {
+      return /\r\n/.test(text) ? '\r\n' : '\n';
+    },
+    normalize(text) {
+      return String(text).replace(/\r\n?/g, '\n');
+    },
+    restore(text, style) {
+      return style === '\r\n' ? String(text).replace(/\n/g, '\r\n') : String(text);
+    }
+  };
+
+  Object.assign(ME, {
+    path,
+    makePath,
+    platform,
+    localizePlatform,
+    eol,
+    isMarkdown,
+    isImage,
+    debounce,
+    escapeHtml,
+    formatTime,
+    countWords,
+    icons,
+    mountIcons
+  });
 })();

@@ -53,22 +53,9 @@
     return { front: m[1], body: src.slice(m[0].length) };
   }
 
-  /** 解析相对路径为本地绝对路径 */
+  /** 解析相对路径为本地绝对路径（兼容 Windows 盘符与反斜杠） */
   function resolveLocal(src, baseDir) {
-    if (!src || /^[a-z][a-z0-9+.-]*:/i.test(src) || src.startsWith('//') || src.startsWith('#')) return null;
-    let clean = src.split('#')[0].split('?')[0];
-    try {
-      clean = decodeURIComponent(clean);
-    } catch (_) {}
-    if (clean.startsWith('/')) return clean;
-    const parts = (baseDir + '/' + clean).split('/');
-    const out = [];
-    for (const seg of parts) {
-      if (!seg || seg === '.') continue;
-      if (seg === '..') out.pop();
-      else out.push(seg);
-    }
-    return '/' + out.join('/');
+    return path.resolveRef(src, baseDir);
   }
 
   class Preview {

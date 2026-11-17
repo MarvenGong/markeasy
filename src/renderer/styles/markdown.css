@@ -102,7 +102,7 @@
 }
 
 .markdown-body code {
-  font-family: "SF Mono", Menlo, Monaco, monospace;
+  font-family: "SF Mono", Menlo, Monaco, "Cascadia Mono", Consolas, monospace;
   font-size: 0.86em;
   padding: 0.15em 0.4em;
   border-radius: 5px;

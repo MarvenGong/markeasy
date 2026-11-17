@@ -2,17 +2,21 @@
   "name": "markeasy",
   "productName": "MarkEasy",
   "version": "1.0.0",
-  "description": "本地 Markdown 编辑与预览桌面应用",
+  "description": "本地 Markdown 编辑与预览桌面应用（macOS / Windows）",
   "main": "src/main/main.js",
   "author": "gongminghua",
   "license": "MIT",
   "scripts": {
-    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
-    "dev": "env -u ELECTRON_RUN_AS_NODE electron . --dev",
-    "test:e2e": "env -u ELECTRON_RUN_AS_NODE MARKEASY_USER_DATA=/tmp/markeasy-e2e-ud MARKEASY_SCREENSHOT=/tmp/markeasy-shot.png MARKEASY_TEST_SCRIPT=scripts/e2e-test.js electron .",
-    "screenshots": "env -u ELECTRON_RUN_AS_NODE MARKEASY_USER_DATA=/tmp/markeasy-shot-ud MARKEASY_TEST_SCRIPT=scripts/screenshot.js electron .",
-    "dist": "electron-builder --mac",
-    "dist:dir": "electron-builder --mac --dir"
+    "start": "node scripts/run-electron.js",
+    "dev": "node scripts/run-electron.js --dev",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node scripts/unit-test.js",
+    "test:e2e": "node scripts/run-electron.js --test=scripts/e2e-test.js",
+    "screenshots": "node scripts/run-electron.js --test=scripts/screenshot.js",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win --x64",
+    "dist:dir": "electron-builder --dir"
   },
   "build": {
     "appId": "com.markeasy.app",
@@ -34,17 +38,47 @@
         "dmg",
         "zip"
       ],
-      "identity": null,
-      "fileAssociations": [
+      "identity": null
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "md",
+          "markdown"
+        ],
+        "name": "Markdown",
+        "description": "Markdown 文档",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
         {
-          "ext": [
-            "md",
-            "markdown"
-          ],
-          "name": "Markdown",
-          "role": "Editor"
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
         }
-      ]
+      ],
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MarkEasy",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     }
   },
   "dependencies": {

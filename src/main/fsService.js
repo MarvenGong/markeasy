@@ -6,7 +6,18 @@ const path = require('path');
 
 const MD_EXT = new Set(['.md', '.markdown', '.mdown', '.mkd']);
 const IMAGE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif']);
-const IGNORED_NAMES = new Set(['.DS_Store', 'node_modules', '.git', '.svn', '.hg']);
+const IGNORED_NAMES = new Set([
+  '.DS_Store',
+  'node_modules',
+  '.git',
+  '.svn',
+  '.hg',
+  // Windows 系统文件
+  'Thumbs.db',
+  'desktop.ini',
+  '$RECYCLE.BIN',
+  'System Volume Information'
+]);
 
 const MIME_EXT = {
   'image/png': '.png',
@@ -60,11 +71,20 @@ async function readDir(dir, { showHidden = false, showAll = false } = {}) {
   return items;
 }
 
-function validateName(name) {
+const WIN_RESERVED = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+
+/** 校验文件/文件夹名；Windows 规则更严格 */
+function validateName(name, platform = process.platform) {
   const n = String(name || '').trim();
   if (!n) throw new Error('名称不能为空');
   if (n === '.' || n === '..') throw new Error('名称不合法');
-  if (/[/\\:\0]/.test(n)) throw new Error('名称不能包含 / \\ : 等字符');
+  if (platform === 'win32') {
+    if (/[<>:"/\\|?*\u0000-\u001f]/.test(n)) throw new Error('名称不能包含 \\ / : * ? " < > | 等字符');
+    if (WIN_RESERVED.test(n)) throw new Error(`“${n}” 是 Windows 保留名称`);
+    if (/[. ]$/.test(n)) throw new Error('名称不能以点或空格结尾');
+  } else if (/[/\\:\0]/.test(n)) {
+    throw new Error('名称不能包含 / \\ : 等字符');
+  }
   return n;
 }
 
@@ -181,6 +201,7 @@ module.exports = {
   createFile,
   createFolder,
   rename,
+  validateName,
   exists,
   isMarkdown,
   isImage,

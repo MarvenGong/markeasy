@@ -140,7 +140,7 @@
       // 逐级展开祖先目录
       const chain = [];
       let cur = dir;
-      while (cur !== this.root && path.isInside(cur, this.root)) {
+      while (!path.equals(cur, this.root) && path.isInside(cur, this.root)) {
         chain.unshift(cur);
         cur = path.dirname(cur);
       }
