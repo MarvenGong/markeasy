@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: https: http:; media-src 'self' file: https:; font-src 'self' data:; connect-src 'self'"
+    />
+    <title>MarkEasy</title>
+
+    <link rel="stylesheet" href="../../node_modules/codemirror/lib/codemirror.css" />
+    <link rel="stylesheet" href="../../node_modules/codemirror/addon/dialog/dialog.css" />
+    <link rel="stylesheet" href="../../node_modules/@highlightjs/cdn-assets/styles/github.min.css" media="(prefers-color-scheme: light)" />
+    <link rel="stylesheet" href="../../node_modules/@highlightjs/cdn-assets/styles/github-dark.min.css" media="(prefers-color-scheme: dark)" />
+    <link rel="stylesheet" href="styles/app.css" />
+    <link rel="stylesheet" href="styles/editor.css" />
+    <link rel="stylesheet" href="styles/markdown.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <!-- 侧边栏：文件树 -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header drag">
+          <div class="sidebar-title" id="folder-name" title="">未打开文件夹</div>
+          <div class="sidebar-actions no-drag">
+            <button class="icon-btn" id="btn-new-file" title="新建 Markdown 文件 (⌘N)" data-icon="filePlus"></button>
+            <button class="icon-btn" id="btn-new-folder" title="新建文件夹 (⇧⌘N)" data-icon="folderPlus"></button>
+            <button class="icon-btn" id="btn-collapse" title="全部折叠" data-icon="collapse"></button>
+            <button class="icon-btn" id="btn-open-folder" title="打开文件夹 (⌘O)" data-icon="folderOpen"></button>
+          </div>
+        </div>
+        <div id="tree" class="tree" tabindex="0" role="tree"></div>
+        <div id="tree-empty" class="tree-empty">
+          <p>尚未打开文件夹</p>
+          <button class="btn btn-primary" id="btn-open-folder-2">打开文件夹</button>
+        </div>
+      </aside>
+      <div id="sidebar-resizer" class="sidebar-resizer"></div>
+
+      <!-- 主区域 -->
+      <main class="main">
+        <header class="toolbar drag">
+          <button class="icon-btn no-drag" id="btn-toggle-sidebar" title="切换侧边栏 (⌘\)" data-icon="sidebar"></button>
+          <div class="doc-title">
+            <span id="doc-name" class="doc-name"></span>
+            <span id="doc-dirty" class="doc-dirty" title="未保存"></span>
+            <span id="doc-path" class="doc-path"></span>
+          </div>
+          <div class="segmented no-drag" id="view-mode">
+            <button data-mode="edit" title="仅编辑 (⌘1)">编辑</button>
+            <button data-mode="split" title="编辑 + 预览 (⌘2)">分栏</button>
+            <button data-mode="preview" title="仅预览 (⌘3)">预览</button>
+          </div>
+          <button class="icon-btn no-drag" id="btn-settings" title="设置 (⌘,)" data-icon="settings"></button>
+        </header>
+
+        <section id="workspace" class="workspace mode-split">
+          <div id="editor-pane" class="pane editor-pane"><div id="editor" class="editor"></div></div>
+          <div class="pane-divider"></div>
+          <div id="preview-pane" class="pane preview-pane">
+            <article id="preview" class="markdown-body"></article>
+          </div>
+
+          <div id="welcome" class="welcome">
+            <div class="welcome-inner">
+              <img class="welcome-logo" src="assets/logo.png" alt="MarkEasy" />
+              <h1>MarkEasy</h1>
+              <p id="welcome-text">打开一个文件夹，开始编写 Markdown</p>
+              <div class="welcome-actions">
+                <button class="btn btn-primary" id="welcome-open">打开文件夹</button>
+                <button class="btn" id="welcome-new">新建文件</button>
+              </div>
+              <ul class="welcome-tips">
+                <li><kbd>⌘</kbd><kbd>N</kbd> 新建文件，或在目录上右键</li>
+                <li><kbd>⌘</kbd><kbd>V</kbd> 直接粘贴截图，图片自动存入 assets 目录</li>
+                <li><kbd>⌘</kbd><kbd>,</kbd> 打开设置</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <footer class="statusbar">
+          <span id="status-save" class="status-save"></span>
+          <span class="spacer"></span>
+          <span id="status-pos"></span>
+          <span id="status-count"></span>
+        </footer>
+      </main>
+    </div>
+
+    <!-- 设置面板 -->
+    <dialog id="settings-dialog" class="settings-dialog">
+      <form method="dialog" class="settings-form" id="settings-form">
+        <header class="settings-header">
+          <h2>设置</h2>
+          <button class="icon-btn" value="close" title="关闭" data-icon="close"></button>
+        </header>
+        <div class="settings-body">
+          <section>
+            <h3>外观</h3>
+            <label class="row">
+              <span>主题</span>
+              <select name="theme">
+                <option value="system">跟随系统</option>
+                <option value="light">浅色</option>
+                <option value="dark">深色</option>
+              </select>
+            </label>
+            <label class="row">
+              <span>编辑器字号</span>
+              <span class="range"><input type="range" name="editorFontSize" min="11" max="28" step="1" /><output data-for="editorFontSize"></output></span>
+            </label>
+            <label class="row">
+              <span>预览字号</span>
+              <span class="range"><input type="range" name="previewFontSize" min="11" max="28" step="1" /><output data-for="previewFontSize"></output></span>
+            </label>
+            <label class="row">
+              <span>行高</span>
+              <span class="range"><input type="range" name="lineHeight" min="1.2" max="2.4" step="0.1" /><output data-for="lineHeight"></output></span>
+            </label>
+            <label class="row">
+              <span>编辑器字体</span>
+              <select name="editorFontFamily">
+                <option value="mono">等宽（SF Mono / Menlo）</option>
+                <option value="system">系统无衬线（苹方）</option>
+                <option value="serif">衬线（宋体）</option>
+              </select>
+            </label>
+            <label class="row">
+              <span>预览字体</span>
+              <select name="previewFontFamily">
+                <option value="system">系统无衬线（苹方）</option>
+                <option value="serif">衬线（宋体）</option>
+              </select>
+            </label>
+          </section>
+          <section>
+            <h3>编辑器</h3>
+            <label class="row"><span>显示行号</span><input type="checkbox" name="lineNumbers" class="switch" /></label>
+            <label class="row"><span>自动换行</span><input type="checkbox" name="lineWrapping" class="switch" /></label>
+            <label class="row">
+              <span>缩进宽度</span>
+              <select name="tabSize">
+                <option value="2">2 个空格</option>
+                <option value="4">4 个空格</option>
+              </select>
+            </label>
+            <label class="row"><span>同步滚动</span><input type="checkbox" name="syncScroll" class="switch" /></label>
+            <label class="row">
+              <span>粘贴表格转为 Markdown<small>从 Excel / 微盘 / 在线表格复制的表格自动转换</small></span>
+              <input type="checkbox" name="pasteTableAsMarkdown" class="switch" />
+            </label>
+            <label class="row"><span>自动保存</span><input type="checkbox" name="autoSave" class="switch" /></label>
+            <label class="row">
+              <span>自动保存延迟</span>
+              <select name="autoSaveDelay">
+                <option value="500">0.5 秒</option>
+                <option value="1000">1 秒</option>
+                <option value="3000">3 秒</option>
+                <option value="10000">10 秒</option>
+              </select>
+            </label>
+          </section>
+          <section>
+            <h3>文件</h3>
+            <label class="row">
+              <span>图片保存目录<small>相对于当前 Markdown 文件</small></span>
+              <input type="text" name="imageFolder" placeholder="assets" spellcheck="false" />
+            </label>
+            <label class="row"><span>显示隐藏文件</span><input type="checkbox" name="showHiddenFiles" class="switch" /></label>
+            <label class="row"><span>显示非 Markdown 文件</span><input type="checkbox" name="showAllFiles" class="switch" /></label>
+          </section>
+        </div>
+        <footer class="settings-footer">
+          <button type="button" class="btn" id="settings-reset">恢复默认</button>
+          <span class="spacer"></span>
+          <button class="btn btn-primary" value="close">完成</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <!-- 输入框弹窗 -->
+    <dialog id="prompt-dialog" class="prompt-dialog">
+      <form method="dialog" id="prompt-form">
+        <h3 id="prompt-title"></h3>
+        <p id="prompt-desc" class="prompt-desc"></p>
+        <input id="prompt-input" type="text" spellcheck="false" autocomplete="off" />
+        <p id="prompt-error" class="prompt-error"></p>
+        <div class="prompt-actions">
+          <button type="button" class="btn" id="prompt-cancel">取消</button>
+          <button type="submit" class="btn btn-primary" id="prompt-ok">确定</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- 图片查看器 -->
+    <dialog id="image-viewer" class="image-viewer">
+      <header class="iv-header">
+        <div class="iv-title">
+          <span id="iv-name" class="iv-name"></span>
+          <span id="iv-meta" class="iv-meta"></span>
+        </div>
+        <span id="iv-counter" class="iv-meta"></span>
+        <button class="btn" id="iv-open">用默认应用打开</button>
+        <button class="btn" id="iv-reveal">在 Finder 中显示</button>
+        <button class="icon-btn" id="iv-close" title="关闭 (Esc)" data-icon="close"></button>
+      </header>
+      <div class="iv-body" tabindex="-1" autofocus>
+        <div class="iv-stage" id="iv-stage"><img id="iv-img" alt="" draggable="false" /></div>
+        <button class="iv-nav iv-prev" id="iv-prev" title="上一张 (←)">‹</button>
+        <button class="iv-nav iv-next" id="iv-next" title="下一张 (→)">›</button>
+      </div>
+      <footer class="iv-hint">点击图片在「适应窗口 / 原始大小」间切换 · ← → 切换图片 · Esc 关闭</footer>
+    </dialog>
+
+    <div id="toast-root" class="toast-root"></div>
+
+    <!-- 第三方库 -->
+    <script src="../../node_modules/codemirror/lib/codemirror.js"></script>
+    <script src="../../node_modules/codemirror/addon/mode/overlay.js"></script>
+    <script src="../../node_modules/codemirror/mode/meta.js"></script>
+    <script src="../../node_modules/codemirror/mode/markdown/markdown.js"></script>
+    <script src="../../node_modules/codemirror/mode/gfm/gfm.js"></script>
+    <script src="../../node_modules/codemirror/addon/edit/continuelist.js"></script>
+    <script src="../../node_modules/codemirror/addon/edit/matchbrackets.js"></script>
+    <script src="../../node_modules/codemirror/addon/selection/active-line.js"></script>
+    <script src="../../node_modules/codemirror/addon/dialog/dialog.js"></script>
+    <script src="../../node_modules/codemirror/addon/search/searchcursor.js"></script>
+    <script src="../../node_modules/codemirror/addon/search/search.js"></script>
+    <script src="../../node_modules/codemirror/addon/display/placeholder.js"></script>
+    <script src="../../node_modules/marked/lib/marked.umd.js"></script>
+    <script src="../../node_modules/dompurify/dist/purify.min.js"></script>
+    <script src="../../node_modules/@highlightjs/cdn-assets/highlight.min.js"></script>
+
+    <!-- 应用脚本 -->
+    <script src="js/util.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/table-paste.js"></script>
+    <script src="js/tree.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/preview.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/image-viewer.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

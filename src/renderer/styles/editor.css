@@ -1,0 +1,167 @@
+/* CodeMirror 外观（跟随主题变量） */
+.editor .CodeMirror {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--editor-font);
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
+}
+
+.editor .CodeMirror-lines {
+  padding: 24px 0 40vh;
+}
+.editor .CodeMirror pre.CodeMirror-line,
+.editor .CodeMirror pre.CodeMirror-line-like {
+  padding: 0 32px;
+}
+.editor .CodeMirror-sizer {
+  max-width: 920px;
+}
+
+.editor .CodeMirror-cursor {
+  border-left: 2px solid var(--accent);
+}
+.editor .CodeMirror-selected,
+.editor .CodeMirror-focused .CodeMirror-selected,
+.editor .CodeMirror-line::selection,
+.editor .CodeMirror-line > span::selection,
+.editor .CodeMirror-line > span > span::selection {
+  background: var(--cm-selection);
+}
+.editor .CodeMirror-activeline-background {
+  background: var(--cm-active-line);
+}
+
+.editor .CodeMirror-gutters {
+  background: var(--bg);
+  border-right: none;
+}
+.editor .CodeMirror-linenumber {
+  color: var(--text-mute);
+  padding: 0 10px 0 12px;
+  font-size: 0.82em;
+}
+
+.editor .CodeMirror-placeholder {
+  color: var(--text-mute) !important;
+}
+
+/* Markdown 语法着色 */
+.cm-s-default .cm-header {
+  color: var(--text);
+  font-weight: 700;
+}
+.cm-s-default .cm-header-1 {
+  font-size: 1.35em;
+}
+.cm-s-default .cm-header-2 {
+  font-size: 1.2em;
+}
+.cm-s-default .cm-header-3 {
+  font-size: 1.08em;
+}
+.cm-s-default .cm-formatting-header {
+  color: var(--text-mute);
+  font-weight: 400;
+}
+.cm-s-default .cm-strong {
+  font-weight: 700;
+}
+.cm-s-default .cm-em {
+  font-style: italic;
+}
+.cm-s-default .cm-strikethrough {
+  text-decoration: line-through;
+  color: var(--text-mute);
+}
+.cm-s-default .cm-link,
+.cm-s-default .cm-url {
+  color: var(--accent);
+  text-decoration: none;
+}
+.cm-s-default .cm-url {
+  color: var(--text-mute);
+}
+.cm-s-default .cm-quote {
+  color: var(--text-soft);
+  font-style: italic;
+}
+.cm-s-default .cm-comment {
+  color: #c0392b;
+  background: rgba(127, 127, 127, 0.08);
+  border-radius: 3px;
+}
+.cm-s-default .cm-formatting-code-block,
+.cm-s-default .cm-formatting-code {
+  color: var(--text-mute);
+}
+.cm-s-default .cm-variable-2,
+.cm-s-default .cm-variable-3,
+.cm-s-default .cm-keyword {
+  color: inherit;
+}
+.cm-s-default .cm-formatting-list,
+.cm-s-default .cm-formatting-quote,
+.cm-s-default .cm-hr {
+  color: var(--accent);
+  font-weight: 600;
+}
+.cm-s-default .cm-formatting-strong,
+.cm-s-default .cm-formatting-em,
+.cm-s-default .cm-formatting-link,
+.cm-s-default .cm-formatting-image {
+  color: var(--text-mute);
+}
+.cm-s-default .cm-image-alt-text {
+  color: #3d9a6a;
+}
+.cm-s-default .cm-tag {
+  color: #a0509e;
+}
+.cm-s-default .cm-attribute {
+  color: #b5762a;
+}
+.cm-s-default .cm-string {
+  color: #3d9a6a;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cm-s-default .cm-comment {
+    color: #ef7a6f;
+  }
+  .cm-s-default .cm-image-alt-text,
+  .cm-s-default .cm-string {
+    color: #6cc690;
+  }
+  .cm-s-default .cm-tag {
+    color: #d08ccf;
+  }
+}
+
+/* 查找对话框 */
+.CodeMirror-dialog {
+  background: var(--bg-soft);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 6px 12px;
+}
+.CodeMirror-dialog-top {
+  border-bottom: 1px solid var(--border);
+}
+.CodeMirror-dialog input {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  border: 1px solid var(--border) !important;
+  border-radius: 5px;
+  padding: 2px 6px;
+  color: var(--text);
+  width: 18em !important;
+}
+.CodeMirror-dialog button {
+  font-size: 12px;
+}
+.cm-searching {
+  background: rgba(255, 196, 0, 0.35);
+}

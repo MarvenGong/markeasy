@@ -1,0 +1,60 @@
+{
+  "name": "markeasy",
+  "productName": "MarkEasy",
+  "version": "1.0.0",
+  "description": "本地 Markdown 编辑与预览桌面应用",
+  "main": "src/main/main.js",
+  "author": "gongminghua",
+  "license": "MIT",
+  "scripts": {
+    "start": "env -u ELECTRON_RUN_AS_NODE electron .",
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron . --dev",
+    "test:e2e": "env -u ELECTRON_RUN_AS_NODE MARKEASY_USER_DATA=/tmp/markeasy-e2e-ud MARKEASY_SCREENSHOT=/tmp/markeasy-shot.png MARKEASY_TEST_SCRIPT=scripts/e2e-test.js electron .",
+    "screenshots": "env -u ELECTRON_RUN_AS_NODE MARKEASY_USER_DATA=/tmp/markeasy-shot-ud MARKEASY_TEST_SCRIPT=scripts/screenshot.js electron .",
+    "dist": "electron-builder --mac",
+    "dist:dir": "electron-builder --mac --dir"
+  },
+  "build": {
+    "appId": "com.markeasy.app",
+    "productName": "MarkEasy",
+    "afterPack": "./scripts/after-pack.js",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.map",
+      "!**/*.d.ts"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "identity": null,
+      "fileAssociations": [
+        {
+          "ext": [
+            "md",
+            "markdown"
+          ],
+          "name": "Markdown",
+          "role": "Editor"
+        }
+      ]
+    }
+  },
+  "dependencies": {
+    "@highlightjs/cdn-assets": "^11.12.0",
+    "codemirror": "^5.65.21",
+    "dompurify": "^3.4.18",
+    "marked": "^18.2.1"
+  },
+  "devDependencies": {
+    "electron": "^45.3.3",
+    "electron-builder": "^26.18.0"
+  }
+}
