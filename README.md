@@ -6,7 +6,7 @@
 
 **本地优先 · 轻量简洁 · 开箱即用 —— 跨平台的 Markdown 编辑与预览工具**
 
-![Version](https://img.shields.io/badge/MarkEasy-v1.0.0-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/badge/MarkEasy-v1.1.0-2563eb?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-1e293b?style=for-the-badge)
 ![Electron](https://img.shields.io/badge/Electron-45-47848f?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)
@@ -15,7 +15,7 @@
 
 </div>
 
-MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS 与 Windows。打开任意文件夹即可当作笔记库使用，左侧文件树管理目录，中间写、右边看。
+MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS 与 Windows。打开任意文件夹即可当作笔记库使用，左侧文件树管理目录，中间写、右边看；用其它 AI 工具生成的 HTML 页面也能直接拖进文档里嵌入展示。
 **所有文件都是普通的 `.md`，保存在你自己的硬盘上** —— 无账号、无云端、无私有格式，换任何编辑器都能继续用。
 
 ![MarkEasy 主界面](docs/screenshots/main.png)
@@ -26,8 +26,8 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 
 | 平台 | 架构 | 安装包（点击直接下载） |
 | --- | --- | --- |
-| **macOS** | Apple Silicon (arm64) | [MarkEasy-1.0.0-arm64.dmg](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-1.0.0-arm64.dmg) / [MarkEasy-1.0.0-arm64-mac.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-1.0.0-arm64-mac.zip) |
-| **Windows** 10 / 11 | x64 | [MarkEasy-Setup-1.0.0-x64.exe](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-Setup-1.0.0-x64.exe)（安装版） / [MarkEasy-1.0.0-win-x64.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.0.0/MarkEasy-1.0.0-win-x64.zip)（免安装，解压即用） |
+| **macOS** | Apple Silicon (arm64) | [MarkEasy-1.1.0-arm64.dmg](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-1.1.0-arm64.dmg) / [MarkEasy-1.1.0-arm64-mac.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-1.1.0-arm64-mac.zip) |
+| **Windows** 10 / 11 | x64 | [MarkEasy-Setup-1.1.0-x64.exe](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-Setup-1.1.0-x64.exe)（安装版） / [MarkEasy-1.1.0-win-x64.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-1.1.0-win-x64.zip)（免安装，解压即用） |
 
 历史版本与更新说明见 [Releases](https://github.com/MarvenGong/markeasy/releases)。
 
@@ -45,6 +45,7 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 - **零学习成本** — 打开文件夹 → 选文件 → 写，界面只保留必要元素
 - **图片不再乱放** — 截图直接粘贴，自动存到文档旁的 `assets/` 并写好相对路径，整个目录拷走图片也不会丢
 - **表格不再手敲** — 从 Excel / 企业微信微盘 / 在线表格复制，粘贴即是对齐好的 Markdown 表格
+- **AI 生成的 HTML 直接嵌入** — 业务看板、流程图、分析报告等 HTML 单文件拖进来，自动存到 `assets/`，在文档里以 iframe 实时展示，脚本与交互照常运行
 - **原生桌面体验** — 原生菜单、右键菜单与对话框；删除文件进废纸篓 / 回收站；双击 `.md` 直接用 MarkEasy 打开
 - **跨平台无差异** — macOS 与 Windows 功能一致，快捷键自动适配 `⌘` / `Ctrl`；保留文件原有换行符（LF / CRLF），多平台协作不产生无意义的改动
 
@@ -116,6 +117,8 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 - 编辑文档其它内容时嵌入的页面不会反复刷新，图表的交互状态得以保留
 - 安全隔离：嵌入页面运行在沙箱中，无法访问 MarkEasy 本身和你的本地文件；也支持嵌入 `https://` 网页
 - 使用标准 `<iframe>` 写法，Typora、VS Code 等支持 HTML 的 Markdown 工具同样能显示
+
+![HTML 页面嵌入](docs/screenshots/html-embed.png)
 
 ### 6. 个性化设置
 
@@ -236,7 +239,7 @@ markeasy/
     ├── main/                 # 主进程
     │   ├── main.js           #   窗口、IPC、文件监听、右键菜单、文件关联
     │   ├── menu.js           #   应用菜单与快捷键（按平台生成）
-    │   ├── fsService.js      #   目录读取、新建/重命名、图片转存
+    │   ├── fsService.js      #   目录读取、新建/重命名、图片与 HTML 转存
     │   └── settings.js       #   设置持久化
     ├── preload/preload.js    # 安全暴露给渲染进程的 API
     └── renderer/             # 界面
@@ -244,8 +247,8 @@ markeasy/
         ├── js/
         │   ├── app.js        #   主控制器
         │   ├── tree.js       #   文件树
-        │   ├── editor.js     #   编辑器、图片/表格粘贴
-        │   ├── preview.js    #   Markdown 预览
+        │   ├── editor.js     #   编辑器、图片/表格粘贴、HTML 拖入
+        │   ├── preview.js    #   Markdown 预览、iframe 嵌入（增量渲染）
         │   ├── table-paste.js#   表格 → Markdown 转换
         │   ├── image-viewer.js#  图片查看器
         │   ├── settings.js   #   设置面板
@@ -258,6 +261,18 @@ markeasy/
 
 - macOS：`~/Library/Application Support/MarkEasy/settings.json`
 - Windows：`%APPDATA%\MarkEasy\settings.json`
+
+---
+
+## 更新日志
+
+### v1.1.0（2026-11-18）
+- 新增 **HTML 页面嵌入**：拖入或粘贴 `.html` 单文件，自动存到 `assets/` 并以 iframe 嵌入预览，沙箱隔离运行，支持刷新、放大铺满窗口、浏览器打开
+- 预览改为增量渲染，编辑时嵌入页面不会反复刷新
+- 设置项「图片保存目录」更名为「图片 / 附件保存目录」
+
+### v1.0.0（2026-11-17）
+- 首个版本：文件树、分栏实时预览、截图粘贴转存、Excel 表格粘贴转 Markdown、图片查看器、深浅色主题，支持 macOS 与 Windows
 
 ---
 
