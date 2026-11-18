@@ -172,6 +172,9 @@
   function isImage(p) {
     return IMAGE_EXT.includes(path.extname(p));
   }
+  function isHtml(p) {
+    return ['.html', '.htm'].includes(path.extname(p));
+  }
 
   function debounce(fn, wait) {
     let t = null;
@@ -311,6 +314,7 @@
     eol,
     isMarkdown,
     isImage,
+    isHtml,
     debounce,
     escapeHtml,
     formatTime,

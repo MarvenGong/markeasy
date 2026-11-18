@@ -39,6 +39,12 @@ function isImage(p) {
   return IMAGE_EXT.has(path.extname(p).toLowerCase());
 }
 
+const HTML_EXT = new Set(['.html', '.htm']);
+
+function isHtml(p) {
+  return HTML_EXT.has(path.extname(p).toLowerCase());
+}
+
 /** 读取单层目录（文件树按需懒加载） */
 async function readDir(dir, { showHidden = false, showAll = false } = {}) {
   const dirents = await fsp.readdir(dir, { withFileTypes: true });
@@ -196,6 +202,47 @@ async function copyImageFile(mdPath, srcPath, imageFolder) {
   return { absPath: target, relPath: toMarkdownRelative(mdPath, target), name: path.basename(target) };
 }
 
+/** 文件名去掉路径分隔符、控制字符与 Windows 非法字符，空白转为 - */
+function safeBaseName(name) {
+  return String(name || '')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/^[.-]+|[.-]+$/g, '')
+    .slice(0, 120);
+}
+
+/**
+ * 复制 HTML 单文件到附件目录（与图片共用目录设置）。
+ * 已在目标目录内的文件直接引用，不重复复制。
+ */
+async function copyHtmlFile(mdPath, srcPath, folder) {
+  if (!mdPath) throw new Error('请先打开一个 Markdown 文件');
+  if (!isHtml(srcPath)) throw new Error('只支持 .html / .htm 文件');
+  const dir = path.join(path.dirname(mdPath), sanitizeFolderName(folder));
+  if (path.dirname(srcPath) === dir) {
+    return { absPath: srcPath, relPath: toMarkdownRelative(mdPath, srcPath), name: path.basename(srcPath) };
+  }
+  await fsp.mkdir(dir, { recursive: true });
+  const ext = path.extname(srcPath).toLowerCase();
+  const base = safeBaseName(path.basename(srcPath, path.extname(srcPath))) || timestampName().replace('image', 'page');
+  const target = await uniquePath(dir, base, ext);
+  await fsp.copyFile(srcPath, target);
+  return { absPath: target, relPath: toMarkdownRelative(mdPath, target), name: path.basename(target) };
+}
+
+/** 保存无磁盘路径的 HTML 内容（如从浏览器下载栏拖入）到附件目录 */
+async function saveHtmlData(mdPath, data, name, folder) {
+  if (!mdPath) throw new Error('请先打开一个 Markdown 文件');
+  const dir = path.join(path.dirname(mdPath), sanitizeFolderName(folder));
+  await fsp.mkdir(dir, { recursive: true });
+  const raw = String(name || '');
+  const ext = isHtml(raw) ? path.extname(raw).toLowerCase() : '.html';
+  const base = safeBaseName(raw.slice(0, raw.length - path.extname(raw).length)) || timestampName().replace('image', 'page');
+  const target = await uniquePath(dir, base, ext);
+  await fsp.writeFile(target, Buffer.from(data));
+  return { absPath: target, relPath: toMarkdownRelative(mdPath, target), name: path.basename(target) };
+}
+
 module.exports = {
   readDir,
   createFile,
@@ -207,5 +254,8 @@ module.exports = {
   isImage,
   saveImageData,
   copyImageFile,
+  isHtml,
+  copyHtmlFile,
+  saveHtmlData,
   toMarkdownRelative
 };

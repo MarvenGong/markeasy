@@ -11,7 +11,7 @@
 ![Electron](https://img.shields.io/badge/Electron-45-47848f?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)
 
-`文件树` · `右键新建` · `分栏实时预览` · `截图粘贴自动转存` · `Excel 表格粘贴转 Markdown` · `图片查看器` · `代码高亮` · `GFM 任务列表` · `深浅色主题` · `字体字号设置` · `自动保存` · `同步滚动` · `外部修改自动刷新`
+`文件树` · `右键新建` · `分栏实时预览` · `截图粘贴自动转存` · `Excel 表格粘贴转 Markdown` · `HTML 页面嵌入` · `图片查看器` · `代码高亮` · `GFM 任务列表` · `深浅色主题` · `字体字号设置` · `自动保存` · `同步滚动` · `外部修改自动刷新`
 
 </div>
 
@@ -102,7 +102,22 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 - 只复制单个单元格时按纯文本粘贴；代码块内不转换
 - 需要原始文本时用 **粘贴为纯文本** `Mod+Shift+V`，也可在设置中关闭此功能
 
-### 5. 个性化设置
+### 5. HTML 页面：拖入即嵌入
+
+用其它 AI 工具梳理业务时生成的 HTML 单文件（看板、流程图、报告……），直接从 Finder / 资源管理器拖到编辑器里（也可以复制文件后 `Mod+V`）：
+
+```html
+<iframe src="assets/业务梳理.html" width="100%" height="600" frameborder="0"></iframe>
+```
+
+- HTML 文件自动复制到当前文档旁的 `assets/`（与图片同一目录），整个文件夹拷走也不会丢
+- 预览区以 iframe 渲染，页面里的脚本、图表、交互都能正常运行；修改 `height` 即可调整高度
+- 嵌入框顶部工具栏：**刷新**、**放大**（铺满整个窗口，`Esc` 还原）、**浏览器打开**
+- 编辑文档其它内容时嵌入的页面不会反复刷新，图表的交互状态得以保留
+- 安全隔离：嵌入页面运行在沙箱中，无法访问 MarkEasy 本身和你的本地文件；也支持嵌入 `https://` 网页
+- 使用标准 `<iframe>` 写法，Typora、VS Code 等支持 HTML 的 Markdown 工具同样能显示
+
+### 6. 个性化设置
 
 `Mod+,` 打开设置，修改即时生效并自动保存。
 
@@ -110,7 +125,7 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 | --- | --- |
 | 外观 | 主题（跟随系统 / 浅色 / 深色）、编辑器字号、预览字号、行高、编辑器字体（等宽 / 无衬线 / 衬线）、预览字体 |
 | 编辑器 | 行号、自动换行、缩进宽度、同步滚动、粘贴表格转 Markdown、自动保存及延迟 |
-| 文件 | 图片保存目录、显示隐藏文件、显示非 Markdown 文件 |
+| 文件 | 图片 / 附件保存目录、显示隐藏文件、显示非 Markdown 文件 |
 
 字体会按平台自动选用系统字体：macOS 为 SF Mono / 苹方 / 宋体，Windows 为 Cascadia Mono、Consolas / 微软雅黑 / 宋体。
 
@@ -262,6 +277,9 @@ markeasy/
 
 **粘贴表格不想被转换？**
 使用 `Mod+Shift+V` 粘贴为纯文本，或在「设置 → 编辑器」中关闭「粘贴表格转为 Markdown」。
+
+**嵌入的 HTML 页面空白或部分功能不正常？**
+嵌入页面运行在沙箱中，不能使用 `localStorage`、Cookie 等浏览器存储，也不能读取本地其它文件。依赖这些能力的页面请点嵌入框上的「浏览器打开」。HTML 引用的本地图片或脚本不会随之复制，建议使用单文件 HTML（资源内联或走 CDN）。
 
 **在文件树中看不到图片或其它文件？**
 默认只显示 Markdown 文件，在「设置 → 文件」中打开「显示非 Markdown 文件」。

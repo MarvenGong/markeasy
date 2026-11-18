@@ -48,6 +48,11 @@ contextBridge.exposeInMainWorld('api', {
     copyFile: (mdPath, srcPath) => call('image:copyFile', { mdPath, srcPath })
   },
 
+  html: {
+    copyFile: (mdPath, srcPath) => call('html:copyFile', { mdPath, srcPath }),
+    saveData: (mdPath, data, name) => call('html:saveData', { mdPath, data, name })
+  },
+
   shell: {
     openExternal: (url) => call('shell:openExternal', url)
   },

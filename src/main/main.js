@@ -270,6 +270,15 @@ function registerIpc() {
     'image:copyFile',
     wrap(({ mdPath, srcPath }) => fsService.copyImageFile(mdPath, srcPath, settings.get().imageFolder))
   );
+  // HTML 单文件：复制到与图片相同的附件目录，供预览区 iframe 嵌入
+  ipcMain.handle(
+    'html:copyFile',
+    wrap(({ mdPath, srcPath }) => fsService.copyHtmlFile(mdPath, srcPath, settings.get().imageFolder))
+  );
+  ipcMain.handle(
+    'html:saveData',
+    wrap(({ mdPath, data, name }) => fsService.saveHtmlData(mdPath, data, name, settings.get().imageFolder))
+  );
 
   ipcMain.handle('shell:openExternal', wrap((url) => openExternalSafe(url)));
   ipcMain.handle('clipboard:writeText', wrap((text) => clipboard.writeText(String(text))));

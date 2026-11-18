@@ -278,6 +278,98 @@ module.exports = async function ({ app, win }) {
     check('CRLF 文件打开后不显示为已修改', crlfDirty === false);
     check('CRLF 文件保存后保持 CRLF 换行', crlfDisk === '# Win\r\n\r\n第一行\r\n第二行\r\n', JSON.stringify(crlfDisk));
 
+    /* ---------------- HTML 单文件拖入 → assets + iframe 嵌入 ---------------- */
+    const htmlSrcDir = path.join(root, '外部资料');
+    fs.mkdirSync(htmlSrcDir, { recursive: true });
+    const pageHtml = `<!doctype html><html><head><meta charset="utf-8"><title>T</title></head>
+<body style="margin:0;font-family:sans-serif"><div style="padding:24px;background:linear-gradient(135deg,#3b6fe0,#7c4dff);color:#fff;height:400px">
+<h1>业务梳理看板</h1><p id="p">脚本未运行</p></div>
+<script>
+document.getElementById('p').textContent = '脚本已运行 · 渲染于 iframe 中';
+let leak = '';
+try { leak = parent.document.title ? '-LEAK' : ''; } catch (e) {}
+try { if (typeof require !== 'undefined' || typeof window.api !== 'undefined') leak += '-NODE'; } catch (e) {}
+document.title = 'EMBED_OK' + leak;
+</script></body></html>`;
+    const htmlSrc = path.join(htmlSrcDir, '业务 梳理.html');
+    fs.writeFileSync(htmlSrc, pageHtml);
+    const embedMd = path.join(root, '笔记', '嵌入测试.md');
+    fs.writeFileSync(embedMd, '# 嵌入测试\n\n前文\n');
+    await js(`window.__markeasy.openFile(${JSON.stringify(embedMd)})`);
+    await sleep(300);
+    await js(`(() => { const cm = window.__markeasy.editor.cm; cm.setCursor({ line: cm.lastLine(), ch: 0 }); })()`);
+
+    // 1) 有磁盘路径：走 html:copyFile（与真实从 Finder 拖入相同的 IPC）
+    const copied = await js(`window.api.html.copyFile(${JSON.stringify(embedMd)}, ${JSON.stringify(htmlSrc)})`);
+    check('HTML 文件复制到 md 同级 assets 目录', copied.absPath === path.join(root, '笔记', 'assets', '业务-梳理.html') && fs.readFileSync(copied.absPath, 'utf8') === pageHtml, copied.absPath);
+    fs.unlinkSync(copied.absPath);
+
+    // 2) 模拟拖放事件（合成 File 无磁盘路径，走 html:saveData）
+    const dropErr = await js(`(() => { try {
+      const dt = new DataTransfer();
+      dt.items.add(new File([${JSON.stringify(pageHtml)}], '业务 梳理.html', { type: 'text/html' }));
+      const target = document.querySelector('.CodeMirror-scroll');
+      const r = target.getBoundingClientRect();
+      target.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true, clientX: r.left + 40, clientY: r.bottom - 20 }));
+      return '';
+    } catch (e) { return String(e && e.stack || e); } })()`);
+    if (dropErr) console.log('drop error:', dropErr);
+    await sleep(900);
+    content = await js(`window.__markeasy.editor.getValue()`);
+    const im = content.match(/<iframe src="(assets\/[^"]+\.html)" width="100%" height="600" frameborder="0"><\/iframe>/);
+    check('拖入 HTML → 插入 iframe 片段', !!im, im ? im[0] : content);
+    check('iframe 作为独立段落插入（前后空行）', /前文\n\n<iframe [^\n]+><\/iframe>\n/.test(content), JSON.stringify(content));
+    const savedHtml = im ? path.join(root, '笔记', decodeURIComponent(im[1])) : '';
+    check('拖入的 HTML 保存到 assets 且内容一致', !!savedHtml && fs.existsSync(savedHtml) && fs.readFileSync(savedHtml, 'utf8') === pageHtml, savedHtml);
+
+    await sleep(800);
+    const frameInfo = await js(`(() => { const f = document.querySelector('#preview .html-embed iframe'); return f && { src: f.src, sandbox: f.getAttribute('sandbox'), h: f.getBoundingClientRect().height, name: document.querySelector('#preview .html-embed-name').textContent }; })()`);
+    check('预览区渲染 iframe（本地 file:// + 沙箱）', frameInfo && frameInfo.src.startsWith('file://') && frameInfo.sandbox === 'allow-scripts allow-popups allow-forms allow-modals' && frameInfo.h === 600, JSON.stringify(frameInfo));
+
+    const findFrame = () => win.webContents.mainFrame.framesInSubtree.find((f) => f !== win.webContents.mainFrame && /\.html$/.test(decodeURIComponent(f.url)));
+    let child = null;
+    for (let i = 0; i < 20 && !child; i++) {
+      child = findFrame();
+      if (!child) await sleep(150);
+    }
+    const title = child ? await child.executeJavaScript('document.title') : '';
+    check('iframe 内脚本正常运行', title.startsWith('EMBED_OK'), title);
+    check('iframe 无法访问 MarkEasy 页面与 Node 接口（沙箱隔离）', title === 'EMBED_OK', title);
+
+    // 编辑其它段落时 iframe 不重新加载
+    if (child) await child.executeJavaScript('window.__alive = 42');
+    await js(`window.__embedEl = document.querySelector('#preview iframe')`);
+    await js(`(() => { const cm = window.__markeasy.editor.cm; cm.replaceRange('补充一段说明。', { line: 2, ch: 2 }); cm.replaceRange('\\n\\n## 新增小节\\n', { line: cm.lastLine(), ch: 0 }); })()`);
+    await sleep(1200);
+    const sameEl = await js(`document.querySelector('#preview iframe') === window.__embedEl && !!document.querySelector('#preview h2')`);
+    const alive = child ? await findFrame().executeJavaScript('window.__alive').catch(() => null) : null;
+    check('编辑其它内容时 iframe 保持不刷新', sameEl && alive === 42, `sameEl=${sameEl} alive=${alive}`);
+
+    // 放大 / 还原
+    await js(`document.querySelector('#preview .html-embed-bar button[data-act="max"]').click()`);
+    await sleep(200);
+    const maxInfo = await js(`(() => { const w = document.querySelector('#preview .html-embed'); const r = w.getBoundingClientRect(); return { max: w.classList.contains('is-max'), w: Math.round(r.width), vw: innerWidth, h: Math.round(r.height), vh: innerHeight, same: w.querySelector('iframe') === window.__embedEl }; })()`);
+    const embedShot = process.env.MARKEASY_SCREENSHOT ? process.env.MARKEASY_SCREENSHOT.replace(/\.png$/, '-embed-max.png') : '';
+    if (embedShot) fs.writeFileSync(embedShot, (await win.webContents.capturePage()).toPNG());
+    await js(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+    await sleep(200);
+    const restored = await js(`!document.querySelector('#preview .html-embed.is-max') && document.querySelector('#preview iframe') === window.__embedEl`);
+    const alive2 = await findFrame().executeJavaScript('window.__alive').catch(() => null);
+    check('放大铺满窗口、Esc 还原且不重新加载', maxInfo.max && maxInfo.w === maxInfo.vw && maxInfo.h === maxInfo.vh && maxInfo.same && restored && alive2 === 42, JSON.stringify(maxInfo) + ` restored=${restored} alive=${alive2}`);
+
+    // 文件不存在 / 不安全的 src
+    await js(`(() => { const cm = window.__markeasy.editor.cm; cm.replaceRange('\\n<iframe src="assets/不存在.html"></iframe>\\n\\n<iframe src="javascript:alert(1)"></iframe>\\n', { line: cm.lastLine(), ch: 0 }); })()`);
+    await sleep(900);
+    const errs = await js(`Array.from(document.querySelectorAll('#preview .html-embed.is-error')).map(e => e.textContent)`);
+    const jsFrame = await js(`Array.from(document.querySelectorAll('#preview iframe')).some(f => /^javascript:/i.test(f.getAttribute('src') || ''))`);
+    check('不存在的 HTML 显示提示、javascript: 地址被拦截', errs.length === 2 && errs.some((t) => t.includes('不存在')) && !jsFrame, JSON.stringify(errs));
+
+    // 截图：分栏中的嵌入效果
+    await js(`(() => { const cm = window.__markeasy.editor.cm; const v = cm.getValue(); cm.setValue(v.replace(/\\n<iframe src="assets\\/不存在[\\s\\S]*$/, '\\n')); })()`);
+    await js(`window.__markeasy.save()`);
+    await sleep(900);
+    if (embedShot) fs.writeFileSync(embedShot.replace('-embed-max', '-embed'), (await win.webContents.capturePage()).toPNG());
+
     // 截图
     await js(`window.__markeasy.openFile(${JSON.stringify(created)})`);
     await sleep(600);

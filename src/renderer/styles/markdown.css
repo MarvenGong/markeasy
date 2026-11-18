@@ -149,6 +149,94 @@
   outline: 1px dashed var(--danger);
 }
 
+/* HTML 嵌入（iframe） */
+.markdown-body .html-embed {
+  display: block;
+  margin: 1em 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+.markdown-body .html-embed-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 6px 0 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-soft);
+  user-select: none;
+}
+.markdown-body .html-embed-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.markdown-body .html-embed-name::before {
+  content: '</>';
+  margin-right: 6px;
+  font-family: var(--editor-font, monospace);
+  color: var(--accent);
+}
+.markdown-body .html-embed-actions {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+.markdown-body .html-embed-actions button {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.markdown-body .html-embed-actions button:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.markdown-body .html-embed iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  /* 多数 AI 生成的页面默认白底，避免深色主题下透明背景导致文字看不清 */
+  background: #fff;
+}
+.markdown-body .html-embed.is-error {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--danger);
+  border-style: dashed;
+  background: transparent;
+}
+/* 放大：铺满整个窗口（不移动 DOM，iframe 不会重新加载） */
+.markdown-body .html-embed.is-max {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+.markdown-body .html-embed.is-max iframe {
+  flex: 1;
+  height: auto;
+}
+body.platform-darwin .markdown-body .html-embed.is-max .html-embed-bar {
+  /* 给 macOS 红绿灯留出位置 */
+  height: 38px;
+  padding-left: 82px;
+}
+
 .markdown-body table {
   display: block;
   width: max-content;

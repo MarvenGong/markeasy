@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: https: http:; media-src 'self' file: https:; font-src 'self' data:; connect-src 'self'"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: https: http:; media-src 'self' file: https:; frame-src 'self' file: https:; font-src 'self' data:; connect-src 'self'"
     />
     <title>MarkEasy</title>
 
@@ -164,7 +164,7 @@
           <section>
             <h3>文件</h3>
             <label class="row">
-              <span>图片保存目录<small>相对于当前 Markdown 文件</small></span>
+              <span>图片 / 附件保存目录<small>相对于当前 Markdown 文件，图片与拖入的 HTML 都存这里</small></span>
               <input type="text" name="imageFolder" placeholder="assets" spellcheck="false" />
             </label>
             <label class="row"><span>显示隐藏文件</span><input type="checkbox" name="showHiddenFiles" class="switch" /></label>

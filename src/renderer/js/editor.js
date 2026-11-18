@@ -125,9 +125,9 @@
       this.cm.scrollTo(null, r * (info.height - info.clientHeight));
     }
 
-    /* ---------------- 图片粘贴/拖拽 ---------------- */
+    /* ---------------- 图片 / HTML 粘贴与拖拽 ---------------- */
 
-    collectImageFiles(dt) {
+    collectFiles(dt) {
       if (!dt) return [];
       const files = [];
       const seen = new Set();
@@ -144,7 +144,24 @@
           .filter((it) => it.kind === 'file')
           .forEach((it) => push(it.getAsFile()));
       }
-      return files.filter((f) => (f.type && f.type.startsWith('image/')) || isImage(f.name));
+      return files;
+    }
+
+    static isImageFile(f) {
+      return (f.type && f.type.startsWith('image/')) || isImage(f.name);
+    }
+
+    static isHtmlFile(f) {
+      return f.type === 'text/html' || ME.isHtml(f.name);
+    }
+
+    collectImageFiles(dt) {
+      return this.collectFiles(dt).filter(Editor.isImageFile);
+    }
+
+    /** 可插入编辑器的文件：图片 + HTML 单文件 */
+    collectInsertable(dt) {
+      return this.collectFiles(dt).filter((f) => Editor.isImageFile(f) || Editor.isHtmlFile(f));
     }
 
     handlePaste(e) {
@@ -175,7 +192,16 @@
         }
       }
 
-      // 2. 图片
+      // 2. 从 Finder / 资源管理器复制的 HTML 文件
+      const htmlFiles = this.collectFiles(dt).filter((f) => ME.isHtml(f.name) && window.api.getPathForFile(f));
+      if (htmlFiles.length && !inCode) {
+        e.preventDefault();
+        this.cm.replaceSelection('');
+        this.insertFiles(htmlFiles, this.cm.getCursor());
+        return;
+      }
+
+      // 3. 图片
       const files = this.collectImageFiles(dt);
       if (!files.length) return; // 交给默认粘贴
       const hasDiskPath = files.some((f) => window.api.getPathForFile(f));
@@ -185,7 +211,7 @@
       if (inCode && text && text.trim()) return;
       e.preventDefault();
       this.cm.replaceSelection('');
-      this.insertImages(files, this.cm.getCursor());
+      this.insertFiles(files, this.cm.getCursor());
     }
 
     /** 光标是否位于 ``` / ~~~ 围栏代码块内 */
@@ -232,9 +258,9 @@
     }
 
     handleDrop(e) {
-      const files = this.collectImageFiles(e.dataTransfer);
+      const files = this.collectInsertable(e.dataTransfer);
       if (!files.length) {
-        // 非图片文件：交给应用处理（打开 md / 文件夹），不要把文件内容插入编辑器
+        // 其它文件：交给应用处理（打开 md / 文件夹），不要把文件内容插入编辑器
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
           e.preventDefault();
           if (this.opts.onDropFiles) this.opts.onDropFiles(Array.from(e.dataTransfer.files));
@@ -244,42 +270,82 @@
       e.preventDefault();
       const pos = this.cm.coordsChar({ left: e.clientX, top: e.clientY }, 'window');
       this.cm.setCursor(pos);
-      this.insertImages(files, pos);
+      this.insertFiles(files, pos);
     }
 
-    async insertImages(files, pos) {
+    /** HTML 嵌入片段：标准 iframe 写法，Typora / VS Code 等也能识别 */
+    static htmlEmbedSnippet(relPath, height = 600) {
+      // 保留中文等可读字符，只转义会破坏路径或属性的字符
+      let readable = relPath;
+      try {
+        readable = decodeURIComponent(relPath);
+      } catch (_) {}
+      readable = readable.replace(/[%"#?<>\s]/g, (c) => encodeURIComponent(c));
+      return `<iframe src="${readable}" width="100%" height="${height}" frameborder="0"></iframe>`;
+    }
+
+    /** 保存单个文件到附件目录，返回要插入的 Markdown 片段 */
+    async saveOne(mdPath, file) {
+      const srcPath = window.api.getPathForFile(file);
+      if (Editor.isHtmlFile(file) && !Editor.isImageFile(file)) {
+        let saved;
+        if (srcPath && ME.isHtml(srcPath)) {
+          saved = await window.api.html.copyFile(mdPath, srcPath);
+        } else {
+          const buf = new Uint8Array(await file.arrayBuffer());
+          saved = await window.api.html.saveData(mdPath, buf, file.name);
+        }
+        return { kind: 'html', text: Editor.htmlEmbedSnippet(saved.relPath) };
+      }
+      let saved;
+      if (srcPath && isImage(srcPath)) {
+        saved = await window.api.image.copyFile(mdPath, srcPath);
+      } else {
+        const buf = new Uint8Array(await file.arrayBuffer());
+        saved = await window.api.image.saveData(mdPath, buf, file.type);
+      }
+      const alt = path.basename(saved.name).replace(/\.[^.]+$/, '');
+      return { kind: 'image', text: `![${alt}](${saved.relPath})` };
+    }
+
+    async insertFiles(files, pos) {
       const mdPath = this.opts.getFilePath();
       if (!mdPath) {
-        ME.toast('请先打开或新建一个 Markdown 文件再粘贴图片', 'warn');
+        ME.toast('请先打开或新建一个 Markdown 文件再插入图片或 HTML', 'warn');
         return;
       }
       // 书签可在异步保存期间跟随文档变化
       const bookmark = this.cm.setBookmark(pos, { insertLeft: false });
-      const snippets = [];
+      const parts = [];
       for (const file of files) {
         try {
-          const srcPath = window.api.getPathForFile(file);
-          let saved;
-          if (srcPath && isImage(srcPath)) {
-            saved = await window.api.image.copyFile(mdPath, srcPath);
-          } else {
-            const buf = new Uint8Array(await file.arrayBuffer());
-            saved = await window.api.image.saveData(mdPath, buf, file.type);
-          }
-          const alt = path.basename(saved.name).replace(/\.[^.]+$/, '');
-          snippets.push(`![${alt}](${saved.relPath})`);
+          parts.push(await this.saveOne(mdPath, file));
         } catch (err) {
-          ME.toast('图片保存失败：' + err.message, 'error');
+          ME.toast(`「${file.name}」保存失败：${err.message}`, 'error');
         }
       }
       const at = bookmark.find() || this.cm.getCursor();
       bookmark.clear();
-      if (!snippets.length) return;
-      const text = snippets.join('\n');
-      this.cm.replaceRange(text, at);
-      this.cm.setCursor({ line: at.line, ch: at.ch + text.length });
-      this.cm.focus();
-      ME.toast(`已插入 ${snippets.length} 张图片`, 'success', 1600);
+      if (!parts.length) return;
+      const htmlCount = parts.filter((p) => p.kind === 'html').length;
+      const imgCount = parts.length - htmlCount;
+      this.cm.setCursor(at);
+      if (htmlCount) {
+        // iframe 作为独立段落插入，前后空行，避免与正文粘连
+        this.insertBlock(parts.map((p) => p.text).join('\n\n'));
+      } else {
+        const text = parts.map((p) => p.text).join('\n');
+        this.cm.replaceRange(text, at);
+        this.cm.setCursor({ line: at.line, ch: at.ch + text.length });
+        this.cm.focus();
+      }
+      const msg = [imgCount ? `${imgCount} 张图片` : '', htmlCount ? `${htmlCount} 个 HTML 页面` : ''].filter(Boolean).join('、');
+      ME.toast(`已插入 ${msg}`, 'success', 1600);
+    }
+
+    /** 兼容旧调用 */
+    insertImages(files, pos) {
+      return this.insertFiles(files, pos);
     }
 
     /* ---------------- 格式命令 ---------------- */
