@@ -6,7 +6,7 @@
 
 **本地优先 · 轻量简洁 · 开箱即用 —— 跨平台的 Markdown 编辑与预览工具**
 
-![Version](https://img.shields.io/badge/MarkEasy-v1.1.0-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/badge/MarkEasy-v1.1.1-2563eb?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-1e293b?style=for-the-badge)
 ![Electron](https://img.shields.io/badge/Electron-45-47848f?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)
@@ -26,8 +26,8 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 
 | 平台 | 架构 | 安装包（点击直接下载） |
 | --- | --- | --- |
-| **macOS** | Apple Silicon (arm64) | [MarkEasy-1.1.0-arm64.dmg](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-1.1.0-arm64.dmg) / [MarkEasy-1.1.0-arm64-mac.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-1.1.0-arm64-mac.zip) |
-| **Windows** 10 / 11 | x64 | [MarkEasy-Setup-1.1.0-x64.exe](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-Setup-1.1.0-x64.exe)（安装版） / [MarkEasy-1.1.0-win-x64.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.0/MarkEasy-1.1.0-win-x64.zip)（免安装，解压即用） |
+| **macOS** | Apple Silicon (arm64) | [MarkEasy-1.1.1-arm64.dmg](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-1.1.1-arm64.dmg) / [MarkEasy-1.1.1-arm64-mac.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-1.1.1-arm64-mac.zip) |
+| **Windows** 10 / 11 | x64 | [MarkEasy-Setup-1.1.1-x64.exe](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-Setup-1.1.1-x64.exe)（安装版） / [MarkEasy-1.1.1-win-x64.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-1.1.1-win-x64.zip)（免安装，解压即用） |
 
 历史版本与更新说明见 [Releases](https://github.com/MarvenGong/markeasy/releases)。
 
@@ -269,6 +269,10 @@ markeasy/
 ---
 
 ## 更新日志
+
+### v1.1.1（2026-11-19）
+- 新增 **预览宽度** 设置：适中 860px / 宽 1200px / 铺满，大图与嵌入页面可完整显示
+- 新增 **在预览区调整图片尺寸**：悬停图片拖动手柄调整宽高（右下角等比，`Shift` 自由），双击还原；写回为标准 `<img width height>`，之后预览按固定宽高显示，窄屏下等比缩小不变形
 
 ### v1.1.0（2026-11-18）
 - 新增 **HTML 页面嵌入**：拖入或粘贴 `.html` 单文件，自动存到 `assets/` 并以 iframe 嵌入预览，沙箱隔离运行，支持刷新、放大铺满窗口、浏览器打开
