@@ -160,6 +160,22 @@ module.exports = async function ({ app, win }) {
     await sleep(1500);
     await shot('html-embed.png');
 
+    // 预览区调整图片尺寸（预览模式 + 悬停显示手柄）
+    fs.copyFileSync(path.join(OUT, 'main.png'), path.join(assets, '主界面.png'));
+    const sizeDoc = mk(
+      '02 项目/MarkEasy/产品截图.md',
+      '# 产品截图\n\n悬停图片，拖动右边、下边或右下角的手柄即可调整显示尺寸，双击手柄还原。\n\n<img src="assets/主界面.png" alt="主界面" width="640" height="400" />\n'
+    );
+    await js(`(async () => { const m = window.__markeasy; m.state.settings = await window.api.settings.set({ previewWidth: 'wide' }); m.preview.applySettings(m.state.settings); })()`);
+    await js(`window.__markeasy.openFile(${JSON.stringify(sizeDoc)})`);
+    await js(`window.__markeasy.tree.setActive(${JSON.stringify(sizeDoc)})`);
+    await js(`window.__markeasy.onMenuAction('view-mode', 'preview')`);
+    await sleep(1000);
+    await js(`document.querySelector('#preview img').dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))`);
+    await sleep(200);
+    await shot('image-resize.png');
+    await js(`(async () => { const m = window.__markeasy; m.onMenuAction('view-mode', 'split'); m.state.settings = await window.api.settings.set({ previewWidth: 'normal' }); m.preview.applySettings(m.state.settings); })()`);
+
     // 深色主题（回到周报文档）
     await js(`window.__markeasy.openFile(${JSON.stringify(doc)})`);
     await js(`window.__markeasy.tree.setActive(${JSON.stringify(doc)})`);

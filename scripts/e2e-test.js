@@ -364,6 +364,85 @@ document.title = 'EMBED_OK' + leak;
     const jsFrame = await js(`Array.from(document.querySelectorAll('#preview iframe')).some(f => /^javascript:/i.test(f.getAttribute('src') || ''))`);
     check('不存在的 HTML 显示提示、javascript: 地址被拦截', errs.length === 2 && errs.some((t) => t.includes('不存在')) && !jsFrame, JSON.stringify(errs));
 
+    /* ---------------- 预览宽度 + 图片拖拽调整宽高 ---------------- */
+    const sizeDir = path.join(root, '尺寸');
+    fs.mkdirSync(path.join(sizeDir, 'assets'), { recursive: true });
+    const bigBuf = Buffer.alloc(400 * 200 * 4, 0x99);
+    fs.writeFileSync(path.join(sizeDir, 'assets', 'big.png'), nativeImage.createFromBitmap(bigBuf, { width: 400, height: 200 }).toPNG());
+    const sizeMd = path.join(sizeDir, '尺寸.md');
+    fs.writeFileSync(sizeMd, '# 尺寸\n\n![图](assets/big.png)\n\n文字 ![图](assets/big.png)\n\n```\n![图](assets/big.png)\n```\n');
+    await js(`window.__markeasy.openFile(${JSON.stringify(sizeMd)})`);
+    await js(`window.__markeasy.onMenuAction('view-mode', 'preview')`);
+    await sleep(700);
+
+    const widthOf = (mode) =>
+      js(`(async () => { const m = window.__markeasy; m.state.settings = await window.api.settings.set({ previewWidth: '${mode}' }); m.preview.applySettings(m.state.settings); const p = document.getElementById('preview'); const pane = document.getElementById('preview-pane'); return { w: Math.round(p.getBoundingClientRect().width), pane: pane.clientWidth, max: getComputedStyle(p).maxWidth }; })()`);
+    const wFull = await widthOf('full');
+    const wWide = await widthOf('wide');
+    const wNormal = await widthOf('normal');
+    check('预览宽度：铺满 / 宽 1200 / 适中 860', wFull.w === wFull.pane && wWide.max === '1200px' && wNormal.max === '860px' && wNormal.w === 860, JSON.stringify({ wFull, wWide, wNormal }));
+
+    // 拖拽手柄：模拟真实指针事件
+    const dragHandle = (imgIdx, dir, dx, dy, shift = false) =>
+      js(`(async () => {
+        const img = document.querySelectorAll('#preview img')[${imgIdx}];
+        img.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+        const box = document.querySelector('.img-resizer');
+        if (box.hidden) return 'overlay-hidden';
+        const h = box.querySelector('.ir-${dir}');
+        const r = h.getBoundingClientRect();
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        h.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, clientX: x, clientY: y }));
+        for (let i = 1; i <= 5; i++) document.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x + ${dx} * i / 5, clientY: y + ${dy} * i / 5, shiftKey: ${shift} }));
+        document.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: x + ${dx}, clientY: y + ${dy} }));
+        return 'ok';
+      })()`);
+    const imgRects = () => js(`Array.from(document.querySelectorAll('#preview img')).map(i => { const r = i.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })`);
+
+    let dr = await dragHandle(1, 'se', -200, 0);
+    await sleep(900);
+    content = await js(`window.__markeasy.editor.getValue()`);
+    check('拖动右下角等比缩放 → 写回第 2 张为 <img> 宽高，其它不动', dr === 'ok' && content === '# 尺寸\n\n![图](assets/big.png)\n\n文字 <img src="assets/big.png" alt="图" width="200" height="100" />\n\n```\n![图](assets/big.png)\n```\n', dr + ' ' + JSON.stringify(content));
+    let rects = await imgRects();
+    check('预览按固定宽高显示', JSON.stringify(rects) === '[[400,200],[200,100]]', JSON.stringify(rects));
+
+    dr = await dragHandle(1, 'e', 100, 0);
+    await sleep(900);
+    content = await js(`window.__markeasy.editor.getValue()`);
+    rects = await imgRects();
+    check('拖动右边只改宽度（不等比）', content.includes('<img src="assets/big.png" alt="图" width="300" height="100" />') && JSON.stringify(rects[1]) === '[300,100]', JSON.stringify(rects));
+
+    dr = await dragHandle(0, 's', 0, 50);
+    await sleep(900);
+    content = await js(`window.__markeasy.editor.getValue()`);
+    check('拖动下边只改高度', content.includes('\n\n<img src="assets/big.png" alt="图" width="400" height="250" />\n\n文字'), JSON.stringify(content));
+
+    const viewerAfterDrag = await js(`document.getElementById('image-viewer').open`);
+    check('拖拽不会误触发图片查看器', viewerAfterDrag === false);
+
+    // 正文区变窄时按比例压缩，不变形
+    await js(`(async () => { const m = window.__markeasy; m.state.settings = await window.api.settings.set({ viewMode: 'split' }); m.onMenuAction('view-mode', 'split'); })()`);
+    await js(`(() => { const cm = window.__markeasy.editor.cm; const v = cm.getValue().replace('width="400" height="250"', 'width="2000" height="1000"'); cm.setValue(v); })()`);
+    await sleep(900);
+    rects = await imgRects();
+    check('宽度超出正文区时等比压缩', rects[0][0] < 2000 && Math.abs(rects[0][0] / rects[0][1] - 2) < 0.02, JSON.stringify(rects));
+    await js(`window.__markeasy.onMenuAction('view-mode', 'preview')`);
+    await sleep(500);
+
+    // 双击手柄还原
+    await js(`(() => {
+      const img = document.querySelectorAll('#preview img')[1];
+      img.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      document.querySelector('.img-resizer .ir-se').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+    })()`);
+    await sleep(900);
+    content = await js(`window.__markeasy.editor.getValue()`);
+    check('双击手柄还原为 Markdown 图片语法', content.includes('文字 ![图](assets/big.png)\n'), JSON.stringify(content));
+    await js(`window.__markeasy.save()`);
+    await sleep(300);
+    check('尺寸修改保存到磁盘', fs.readFileSync(sizeMd, 'utf8') === content);
+    await js(`window.__markeasy.onMenuAction('view-mode', 'split')`);
+
     // 截图：分栏中的嵌入效果
     await js(`(() => { const cm = window.__markeasy.editor.cm; const v = cm.getValue(); cm.setValue(v.replace(/\\n<iframe src="assets\\/不存在[\\s\\S]*$/, '\\n')); })()`);
     await js(`window.__markeasy.save()`);

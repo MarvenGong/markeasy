@@ -58,6 +58,9 @@
     return path.resolveRef(src, baseDir);
   }
 
+  /** 预览内容最大宽度：适中（适合阅读）/ 宽 / 铺满 */
+  const PREVIEW_WIDTHS = { normal: '860px', wide: '1200px', full: 'none' };
+
   const SANITIZE_OPTS = {
     ADD_TAGS: ['iframe'],
     ADD_ATTR: ['target', 'allowfullscreen', 'frameborder'],
@@ -105,6 +108,21 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') this.restoreMaximized();
       });
+      this.resizer = new ME.ImageResizer(scroller, el, {
+        canEdit: () => !!(this.opts.canEditImages && this.opts.canEditImages()),
+        onCommit: (img, w, h) => this.commitImageSize(img, w, h),
+        onReset: (img) => this.commitImageSize(img, null, null)
+      });
+    }
+
+    /** 计算图片在「同地址图片」中的序号，交给外部写回源码 */
+    commitImageSize(img, width, height) {
+      if (!this.opts.onResizeImage) return;
+      const key = ME.imageSize.normalizeSrc(img.dataset.origSrc);
+      const same = Array.from(this.el.querySelectorAll('img[data-orig-src]')).filter(
+        (i) => ME.imageSize.normalizeSrc(i.dataset.origSrc) === key
+      );
+      this.opts.onResizeImage({ src: img.dataset.origSrc, index: same.indexOf(img), count: same.length, width, height });
     }
 
     render(source, filePath) {
@@ -126,6 +144,7 @@
       const tpl = document.createElement('template');
       tpl.innerHTML = clean;
       this.patch(Array.from(tpl.content.childNodes));
+      if (this.resizer.img && !this.resizer.img.isConnected) this.resizer.hide();
     }
 
     /**
@@ -159,12 +178,24 @@
 
     clear() {
       this.el.replaceChildren();
+      this.resizer.hide();
       document.body.classList.remove('embed-maximized');
     }
 
     /** 处理新节点中的本地资源（在挂到页面之前调用），返回实际要插入的节点 */
     prepare(root) {
       if (root.nodeType !== 1) return root;
+      selectAll(root, 'img[src]').forEach((img) => {
+        img.dataset.origSrc = img.getAttribute('src');
+        // 同时指定了宽高：按该比例显示，窗口太窄被 max-width 压缩时不变形
+        const w = parseFloat(img.getAttribute('width'));
+        const h = parseFloat(img.getAttribute('height'));
+        if (w > 0 && h > 0) {
+          img.style.aspectRatio = `${w} / ${h}`;
+          img.style.height = 'auto';
+          img.classList.add('sized');
+        }
+      });
       if (this.baseDir) {
         selectAll(root, 'img[src], video[src], source[src]').forEach((node) => {
           const abs = resolveLocal(node.getAttribute('src'), this.baseDir);
@@ -341,6 +372,8 @@
       root.setProperty('--preview-font-size', s.previewFontSize + 'px');
       root.setProperty('--preview-font', ME.FONT_STACKS[s.previewFontFamily] || ME.FONT_STACKS.system);
       root.setProperty('--preview-line-height', String(s.lineHeight));
+      root.setProperty('--preview-max-width', PREVIEW_WIDTHS[s.previewWidth] || PREVIEW_WIDTHS.normal);
+      if (this.resizer.img) this.resizer.place();
     }
   }
 

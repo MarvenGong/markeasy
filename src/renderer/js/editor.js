@@ -348,6 +348,24 @@
       return this.insertFiles(files, pos);
     }
 
+    /* ---------------- 图片尺寸（预览区拖拽后写回） ---------------- */
+
+    /**
+     * @param {{src:string,index:number,count:number,width:?number,height:?number}} req
+     * @returns {'resized'|'reset'|'unchanged'|'not-found'}
+     */
+    setImageSize({ src, index, count, width, height }) {
+      const source = this.cm.getValue();
+      const item = ME.imageSize.locate(source, src, index, count);
+      if (!item) return 'not-found';
+      const text = ME.imageSize.buildReplacement(item, width, height);
+      if (text === item.raw) return 'unchanged';
+      const from = this.cm.posFromIndex(item.start);
+      const to = this.cm.posFromIndex(item.end);
+      this.cm.replaceRange(text, from, to, '+imagesize');
+      return width && height ? 'resized' : 'reset';
+    }
+
     /* ---------------- 格式命令 ---------------- */
 
     wrap(before, after = before, placeholder = '') {

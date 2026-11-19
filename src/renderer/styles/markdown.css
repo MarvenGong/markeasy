@@ -1,6 +1,6 @@
 /* 预览区 Markdown 样式（GitHub 风格简化版） */
 .markdown-body {
-  max-width: 860px;
+  max-width: var(--preview-max-width, 860px);
   margin: 0 auto;
   padding: 28px 40px 30vh;
   font-family: var(--preview-font);
@@ -143,6 +143,10 @@
   border-radius: 4px;
   cursor: zoom-in;
 }
+.markdown-body img.sized {
+  /* 固定宽高的图片：比例由行内 aspect-ratio 决定 */
+  object-fit: fill;
+}
 .markdown-body img.broken {
   min-width: 120px;
   min-height: 40px;
@@ -264,3 +268,66 @@ body.platform-darwin .markdown-body .html-embed.is-max .html-embed-bar {
 .markdown-body .render-error {
   color: var(--danger);
 }
+
+/* 图片尺寸调整：悬停图片时出现的边框与拖拽手柄（挂在预览滚动容器上，不参与内容渲染） */
+.img-resizer {
+  position: absolute;
+  z-index: 20;
+  box-sizing: border-box;
+  border: 1.5px solid var(--accent);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.img-resizer .ir-size {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font: 11px/16px -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.img-resizer .ir-handle {
+  position: absolute;
+  pointer-events: auto;
+  background: var(--bg);
+  border: 1.5px solid var(--accent);
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+.img-resizer .ir-e {
+  top: 50%;
+  right: -5px;
+  width: 9px;
+  height: 26px;
+  margin-top: -13px;
+  cursor: ew-resize;
+}
+.img-resizer .ir-s {
+  left: 50%;
+  bottom: -5px;
+  width: 26px;
+  height: 9px;
+  margin-left: -13px;
+  cursor: ns-resize;
+}
+.img-resizer .ir-se {
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+}
+.img-resizer.dragging .ir-handle {
+  background: var(--accent);
+}
+body.img-resizing,
+body.img-resizing * {
+  user-select: none !important;
+}
+body.img-resizing-e * { cursor: ew-resize !important; }
+body.img-resizing-s * { cursor: ns-resize !important; }
+body.img-resizing-se * { cursor: nwse-resize !important; }

@@ -127,6 +127,14 @@
               </select>
             </label>
             <label class="row">
+              <span>预览宽度<small>正文区域的最大宽度，铺满时大图与嵌入页面显示更完整</small></span>
+              <select name="previewWidth">
+                <option value="normal">适中（860px，适合阅读）</option>
+                <option value="wide">宽（1200px）</option>
+                <option value="full">铺满</option>
+              </select>
+            </label>
+            <label class="row">
               <span>预览字体</span>
               <select name="previewFontFamily">
                 <option value="system">无衬线（系统默认）</option>
@@ -238,6 +246,7 @@
     <script src="js/table-paste.js"></script>
     <script src="js/tree.js"></script>
     <script src="js/editor.js"></script>
+    <script src="js/image-resize.js"></script>
     <script src="js/preview.js"></script>
     <script src="js/settings.js"></script>
     <script src="js/image-viewer.js"></script>

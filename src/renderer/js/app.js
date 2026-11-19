@@ -636,7 +636,14 @@
       onOpenFile: (p) => openFile(p),
       onOpenLocal: (p) => openExternal(p),
       onImageClick: (items, index) => viewer.open(items, index),
-      onScroll: () => syncScroll('preview')
+      onScroll: () => syncScroll('preview'),
+      canEditImages: () => !!state.file,
+      onResizeImage: (req) => {
+        const r = editor.setImageSize(req);
+        if (r === 'not-found') ME.toast('没能在源码中定位这张图片（可能是引用式写法），请在编辑器中手动修改', 'warn', 3200);
+        else if (r === 'reset') ME.toast('已还原为原始尺寸', 'success', 1400);
+        else if (r === 'resized') ME.toast(`图片尺寸已设为 ${req.width} × ${req.height}`, 'success', 1400);
+      }
     });
 
     viewer = new ME.ImageViewer({
@@ -707,6 +714,9 @@
     },
     get tree() {
       return tree;
+    },
+    get preview() {
+      return preview;
     },
     setRoot,
     openFile,

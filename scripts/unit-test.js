@@ -147,5 +147,43 @@ t('macOS 文件名校验', () => {
   assert.throws(() => v('a:b'));
 });
 
+/* ---------------- 图片尺寸写回 ---------------- */
+const IS = (() => {
+  const ctx = { window: { api: { platform: 'darwin' } }, console, URL };
+  vm.createContext(ctx);
+  for (const f of ['util.js', 'image-resize.js']) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'js', f), 'utf8'), ctx);
+  }
+  return ctx.window.ME.imageSize;
+})();
+const resize = (src, imgSrc, index, count, w, h) => {
+  const it = IS.locate(src, imgSrc, index, count);
+  if (!it) return null;
+  return src.slice(0, it.start) + IS.buildReplacement(it, w, h) + src.slice(it.end);
+};
+
+t('图片尺寸：Markdown 语法 → <img> 带宽高', () => {
+  eq(resize('前文 ![截图](assets/a.png) 后文', 'assets/a.png', 0, 1, 320, 180), '前文 <img src="assets/a.png" alt="截图" width="320" height="180" /> 后文');
+  eq(resize('![t](a.png "标题")', 'a.png', 0, 1, 10, 20), '<img src="a.png" alt="t" title="标题" width="10" height="20" />');
+});
+t('图片尺寸：中文路径按编码/未编码都能匹配', () => {
+  eq(resize('![x](assets/%E4%B8%9A%E5%8A%A1.png)', 'assets/业务.png', 0, 1, 5, 6), '<img src="assets/%E4%B8%9A%E5%8A%A1.png" alt="x" width="5" height="6" />');
+  eq(resize('![x](<assets/a b.png>)', 'assets/a%20b.png', 0, 1, 5, 6), '<img src="assets/a%20b.png" alt="x" width="5" height="6" />');
+});
+t('图片尺寸：同一图片出现多次时改第 N 个，跳过代码块', () => {
+  const src = '![a](p.png)\n\n```\n![a](p.png)\n```\n\n`![a](p.png)` ![b](p.png)\n';
+  eq(resize(src, 'p.png', 1, 2, 7, 8), '![a](p.png)\n\n```\n![a](p.png)\n```\n\n`![a](p.png)` <img src="p.png" alt="b" width="7" height="8" />\n');
+  eq(resize(src, 'p.png', 0, 3, 7, 8), null); // 数量对不上（如引用式图片）时拒绝修改
+});
+t('图片尺寸：已有 <img> 更新宽高，保留其它属性，去掉 Typora 的 zoom', () => {
+  eq(resize('<img src="a.png" alt="x" width="1" height="2" class="c">', 'a.png', 0, 1, 30, 40), '<img src="a.png" alt="x" class="c" width="30" height="40">');
+  eq(resize('<img src="a.png" style="zoom:50%; border:1px solid red" />', 'a.png', 0, 1, 30, 40), '<img src="a.png" style="border:1px solid red" width="30" height="40" />');
+});
+t('图片尺寸：还原原始尺寸', () => {
+  eq(resize('<img src="a.png" alt="x" title="t" width="1" height="2" />', 'a.png', 0, 1, null, null), '![x](a.png "t")');
+  eq(resize('<img src="a.png" class="c" width="1" height="2">', 'a.png', 0, 1, null, null), '<img src="a.png" class="c">');
+  eq(resize('![x](a.png)', 'a.png', 0, 1, null, null), '![x](a.png)');
+});
+
 console.log(`\n${pass}/${pass + fail} passed`);
 process.exit(fail ? 1 : 0);

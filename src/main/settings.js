@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   editorFontFamily: 'mono', // mono | system | serif
   previewFontFamily: 'system', // system | serif
   lineHeight: 1.7,
+  previewWidth: 'normal', // normal(860px) | wide(1200px) | full
   // 编辑器
   lineNumbers: false,
   lineWrapping: true,
