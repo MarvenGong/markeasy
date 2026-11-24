@@ -10,8 +10,8 @@
 
     <link rel="stylesheet" href="../../node_modules/codemirror/lib/codemirror.css" />
     <link rel="stylesheet" href="../../node_modules/codemirror/addon/dialog/dialog.css" />
-    <link rel="stylesheet" href="../../node_modules/@highlightjs/cdn-assets/styles/github.min.css" media="(prefers-color-scheme: light)" />
-    <link rel="stylesheet" href="../../node_modules/@highlightjs/cdn-assets/styles/github-dark.min.css" media="(prefers-color-scheme: dark)" />
+    <link rel="stylesheet" id="hljs-light" href="../../node_modules/@highlightjs/cdn-assets/styles/github.min.css" media="(prefers-color-scheme: light)" />
+    <link rel="stylesheet" id="hljs-dark" href="../../node_modules/@highlightjs/cdn-assets/styles/github-dark.min.css" media="(prefers-color-scheme: dark)" />
     <link rel="stylesheet" href="styles/app.css" />
     <link rel="stylesheet" href="styles/editor.css" />
     <link rel="stylesheet" href="styles/markdown.css" />
@@ -95,89 +95,127 @@
           <h2>设置</h2>
           <button class="icon-btn" value="close" title="关闭" data-icon="close"></button>
         </header>
-        <div class="settings-body">
-          <section>
-            <h3>外观</h3>
-            <label class="row">
-              <span>主题</span>
-              <select name="theme">
-                <option value="system">跟随系统</option>
-                <option value="light">浅色</option>
-                <option value="dark">深色</option>
-              </select>
-            </label>
-            <label class="row">
-              <span>编辑器字号</span>
-              <span class="range"><input type="range" name="editorFontSize" min="11" max="28" step="1" /><output data-for="editorFontSize"></output></span>
-            </label>
-            <label class="row">
-              <span>预览字号</span>
-              <span class="range"><input type="range" name="previewFontSize" min="11" max="28" step="1" /><output data-for="previewFontSize"></output></span>
-            </label>
-            <label class="row">
-              <span>行高</span>
-              <span class="range"><input type="range" name="lineHeight" min="1.2" max="2.4" step="0.1" /><output data-for="lineHeight"></output></span>
-            </label>
-            <label class="row">
-              <span>编辑器字体</span>
-              <select name="editorFontFamily">
-                <option value="mono">等宽字体</option>
-                <option value="system">无衬线（系统默认）</option>
-                <option value="serif">衬线（宋体）</option>
-              </select>
-            </label>
-            <label class="row">
-              <span>预览宽度<small>正文区域的最大宽度，铺满时大图与嵌入页面显示更完整</small></span>
-              <select name="previewWidth">
-                <option value="normal">适中（860px，适合阅读）</option>
-                <option value="wide">宽（1200px）</option>
-                <option value="full">铺满</option>
-              </select>
-            </label>
-            <label class="row">
-              <span>预览字体</span>
-              <select name="previewFontFamily">
-                <option value="system">无衬线（系统默认）</option>
-                <option value="serif">衬线（宋体）</option>
-              </select>
-            </label>
-          </section>
-          <section>
-            <h3>编辑器</h3>
-            <label class="row"><span>显示行号</span><input type="checkbox" name="lineNumbers" class="switch" /></label>
-            <label class="row"><span>自动换行</span><input type="checkbox" name="lineWrapping" class="switch" /></label>
-            <label class="row">
-              <span>缩进宽度</span>
-              <select name="tabSize">
-                <option value="2">2 个空格</option>
-                <option value="4">4 个空格</option>
-              </select>
-            </label>
-            <label class="row"><span>同步滚动</span><input type="checkbox" name="syncScroll" class="switch" /></label>
-            <label class="row">
-              <span>粘贴表格转为 Markdown<small>从 Excel / 微盘 / 在线表格复制的表格自动转换</small></span>
-              <input type="checkbox" name="pasteTableAsMarkdown" class="switch" />
-            </label>
-            <label class="row"><span>自动保存</span><input type="checkbox" name="autoSave" class="switch" /></label>
-            <label class="row">
-              <span>自动保存延迟</span>
-              <select name="autoSaveDelay">
-                <option value="500">0.5 秒</option>
-                <option value="1000">1 秒</option>
-                <option value="3000">3 秒</option>
-                <option value="10000">10 秒</option>
-              </select>
-            </label>
-          </section>
-          <section>
-            <h3>文件</h3>
-            <label class="row">
-              <span>图片 / 附件保存目录<small>相对于当前 Markdown 文件，图片与拖入的 HTML 都存这里</small></span>
-              <input type="text" name="imageFolder" placeholder="assets" spellcheck="false" />
-            </label>
-            <label class="row"><span>显示隐藏文件</span><input type="checkbox" name="showHiddenFiles" class="switch" /></label>
-            <label class="row"><span>显示非 Markdown 文件</span><input type="checkbox" name="showAllFiles" class="switch" /></label>
-          </section>
+        <div class="settings-main">
+          <nav class="settings-tabs" role="tablist" aria-orientation="vertical">
+            <button type="button" role="tab" class="settings-tab" data-tab="appearance">外观</button>
+            <button type="button" role="tab" class="settings-tab" data-tab="editor">编辑器</button>
+            <button type="button" role="tab" class="settings-tab" data-tab="preview">预览</button>
+            <button type="button" role="tab" class="settings-tab" data-tab="files">文件</button>
+          </nav>
+          <div class="settings-body">
+            <section class="settings-page" role="tabpanel" data-page="appearance">
+              <h3>外观</h3>
+              <label class="row">
+                <span>主题</span>
+                <select name="theme">
+                  <option value="system">跟随系统</option>
+                  <option value="light">浅色</option>
+                  <option value="dark">深色</option>
+                </select>
+              </label>
+              <label class="row">
+                <span>编辑器字号</span>
+                <span class="range"><input type="range" name="editorFontSize" min="11" max="28" step="1" /><output data-for="editorFontSize"></output></span>
+              </label>
+              <label class="row">
+                <span>预览字号</span>
+                <span class="range"><input type="range" name="previewFontSize" min="11" max="28" step="1" /><output data-for="previewFontSize"></output></span>
+              </label>
+              <label class="row">
+                <span>行高</span>
+                <span class="range"><input type="range" name="lineHeight" min="1.2" max="2.4" step="0.1" /><output data-for="lineHeight"></output></span>
+              </label>
+              <label class="row">
+                <span>编辑器字体</span>
+                <select name="editorFontFamily">
+                  <option value="mono">等宽字体</option>
+                  <option value="system">无衬线（系统默认）</option>
+                  <option value="serif">衬线（宋体）</option>
+                </select>
+              </label>
+              <label class="row">
+                <span>预览字体</span>
+                <select name="previewFontFamily">
+                  <option value="system">无衬线（系统默认）</option>
+                  <option value="serif">衬线（宋体）</option>
+                </select>
+              </label>
+            </section>
+            <section class="settings-page" role="tabpanel" data-page="editor">
+              <h3>编辑器</h3>
+              <label class="row"><span>显示行号</span><input type="checkbox" name="lineNumbers" class="switch" /></label>
+              <label class="row"><span>自动换行</span><input type="checkbox" name="lineWrapping" class="switch" /></label>
+              <label class="row">
+                <span>缩进宽度</span>
+                <select name="tabSize">
+                  <option value="2">2 个空格</option>
+                  <option value="4">4 个空格</option>
+                </select>
+              </label>
+              <label class="row">
+                <span>粘贴表格转为 Markdown<small>从 Excel / 微盘 / 在线表格复制的表格自动转换</small></span>
+                <input type="checkbox" name="pasteTableAsMarkdown" class="switch" />
+              </label>
+              <label class="row"><span>自动保存</span><input type="checkbox" name="autoSave" class="switch" /></label>
+              <label class="row">
+                <span>自动保存延迟</span>
+                <select name="autoSaveDelay">
+                  <option value="500">0.5 秒</option>
+                  <option value="1000">1 秒</option>
+                  <option value="3000">3 秒</option>
+                  <option value="10000">10 秒</option>
+                </select>
+              </label>
+            </section>
+            <section class="settings-page" role="tabpanel" data-page="preview">
+              <h3>预览</h3>
+              <label class="row">
+                <span>预览宽度<small>正文区域的最大宽度，铺满时大图与嵌入页面显示更完整</small></span>
+                <select name="previewWidth">
+                  <option value="normal">适中（860px，适合阅读）</option>
+                  <option value="wide">宽（1200px）</option>
+                  <option value="full">铺满</option>
+                </select>
+              </label>
+              <label class="row"><span>同步滚动<small>分栏模式下编辑区与预览区同步滚动</small></span><input type="checkbox" name="syncScroll" class="switch" /></label>
+              <label class="row">
+                <span>代码块主题<small>「随主题切换」会跟随浅色 / 深色自动变化</small></span>
+                <select name="codeTheme">
+                  <optgroup label="随浅色 / 深色主题切换">
+                    <option value="github">GitHub（默认）</option>
+                    <option value="atom-one">Atom One</option>
+                    <option value="vs">Visual Studio</option>
+                    <option value="stackoverflow">Stack Overflow</option>
+                    <option value="tokyo-night">Tokyo Night</option>
+                    <option value="rose-pine">Rosé Pine</option>
+                    <option value="solarized">Solarized</option>
+                    <option value="gruvbox">Gruvbox</option>
+                  </optgroup>
+                  <optgroup label="始终深色">
+                    <option value="monokai">Monokai</option>
+                    <option value="dracula">Dracula</option>
+                    <option value="nord">Nord</option>
+                    <option value="night-owl">Night Owl</option>
+                    <option value="github-dimmed">GitHub Dark Dimmed</option>
+                  </optgroup>
+                  <optgroup label="始终浅色">
+                    <option value="xcode">Xcode</option>
+                    <option value="intellij">IntelliJ Light</option>
+                  </optgroup>
+                </select>
+              </label>
+              <pre class="code-sample" id="code-theme-sample"><code class="hljs language-javascript"></code></pre>
+            </section>
+            <section class="settings-page" role="tabpanel" data-page="files">
+              <h3>文件</h3>
+              <label class="row">
+                <span>图片 / 附件保存目录<small>相对于当前 Markdown 文件，图片与拖入的 HTML 都存这里</small></span>
+                <input type="text" name="imageFolder" placeholder="assets" spellcheck="false" />
+              </label>
+              <label class="row"><span>显示隐藏文件</span><input type="checkbox" name="showHiddenFiles" class="switch" /></label>
+              <label class="row"><span>显示非 Markdown 文件</span><input type="checkbox" name="showAllFiles" class="switch" /></label>
+            </section>
+          </div>
         </div>
         <footer class="settings-footer">
           <button type="button" class="btn" id="settings-reset">恢复默认</button>
@@ -246,6 +284,7 @@
     <script src="js/table-paste.js"></script>
     <script src="js/tree.js"></script>
     <script src="js/editor.js"></script>
+    <script src="js/code-theme.js"></script>
     <script src="js/image-resize.js"></script>
     <script src="js/preview.js"></script>
     <script src="js/settings.js"></script>

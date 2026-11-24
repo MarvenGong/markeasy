@@ -138,8 +138,10 @@ module.exports = async function ({ app, win }) {
 
     // 设置面板
     await js(`window.__markeasy.onMenuAction('open-settings')`);
+    await js(`document.querySelector('.settings-tab[data-tab="preview"]').click()`);
     await sleep(400);
     await shot('settings.png');
+    await js(`document.querySelector('.settings-tab[data-tab="appearance"]').click()`);
     await js(`document.getElementById('settings-dialog').close()`);
 
     // 文件树显示图片 + 图片查看器
@@ -175,6 +177,24 @@ module.exports = async function ({ app, win }) {
     await sleep(200);
     await shot('image-resize.png');
     await js(`(async () => { const m = window.__markeasy; m.onMenuAction('view-mode', 'split'); m.state.settings = await window.api.settings.set({ previewWidth: 'normal' }); m.preview.applySettings(m.state.settings); })()`);
+
+    // 代码块：主题 + 悬停显示复制按钮
+    const codeDoc = mk(
+      '03 学习/代码片段.md',
+      '# 代码片段\n\n悬停代码块，右上角出现「复制」按钮。\n\n```js\n// 防抖：停止触发 wait 毫秒后才执行\nfunction debounce(fn, wait = 300) {\n  let timer = null;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), wait);\n  };\n}\n```\n\n```python\ndef fib(n: int) -> int:\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n```\n'
+    );
+    await js(`(async () => { const m = window.__markeasy; m.state.settings = await window.api.settings.set({ codeTheme: 'atom-one', previewWidth: 'normal' }); m.preview.applySettings(m.state.settings); })()`);
+    await js(`window.__markeasy.openFile(${JSON.stringify(codeDoc)})`);
+    await js(`window.__markeasy.tree.setActive(${JSON.stringify(codeDoc)})`);
+    await js(`window.__markeasy.onMenuAction('view-mode', 'preview')`);
+    await sleep(1000);
+    const pt = await js(`(() => { const r = document.querySelector('#preview pre').getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 30) }; })()`);
+    win.webContents.sendInputEvent({ type: 'mouseMove', x: pt.x, y: pt.y });
+    await sleep(400);
+    await shot('code-block.png');
+    win.webContents.sendInputEvent({ type: 'mouseMove', x: 5, y: 5 });
+    await js(`(async () => { const m = window.__markeasy; m.onMenuAction('view-mode', 'split'); m.state.settings = await window.api.settings.set({ codeTheme: 'github' }); m.preview.applySettings(m.state.settings); })()`);
+    await sleep(300);
 
     // 深色主题（回到周报文档）
     await js(`window.__markeasy.openFile(${JSON.stringify(doc)})`);

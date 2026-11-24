@@ -1,7 +1,7 @@
 {
   "name": "markeasy",
   "productName": "MarkEasy",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "本地 Markdown 编辑与预览桌面应用（macOS / Windows）",
   "main": "src/main/main.js",
   "author": "gongminghua",

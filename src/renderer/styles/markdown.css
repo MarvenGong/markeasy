@@ -110,21 +110,83 @@
 }
 
 .markdown-body pre {
-  padding: 14px 16px;
-  overflow: auto;
+  position: relative;
+  padding: 0;
+  overflow: hidden;
   border-radius: 8px;
   background: var(--bg-soft);
   border: 1px solid var(--border);
   line-height: 1.5;
 }
-.markdown-body pre code {
-  padding: 0;
+.markdown-body pre > code,
+.markdown-body pre > code.hljs {
+  display: block;
+  padding: 14px 16px;
+  overflow: auto;
   background: transparent !important;
   font-size: 0.85em;
   white-space: pre;
+  border-radius: 0;
 }
-.markdown-body pre code.hljs {
-  padding: 0;
+/* 非默认代码主题：使用主题自身的背景色 */
+body:not(.code-theme-default) .markdown-body pre:not(.front-matter) {
+  background: var(--code-bg);
+  border-color: transparent;
+}
+
+/* 代码块右上角：语言 + 复制 */
+.markdown-body .code-tools {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.markdown-body .code-lang {
+  color: var(--code-fg, var(--text-mute));
+  opacity: 0.5;
+  text-transform: lowercase;
+  transition: opacity 0.15s;
+}
+.markdown-body .code-copy {
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--code-fg, #888) 22%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--code-bg, var(--bg)) 88%, var(--code-fg, #888) 12%);
+  color: var(--code-fg, var(--text-soft));
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+}
+body.code-theme-default .markdown-body .code-copy {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-soft);
+}
+.markdown-body pre:hover .code-copy,
+.markdown-body .code-copy:focus-visible,
+.markdown-body .code-copy.done {
+  opacity: 1;
+}
+.markdown-body pre:hover .code-lang {
+  opacity: 0.8;
+}
+.markdown-body .code-copy:hover {
+  background: color-mix(in srgb, var(--code-bg, var(--bg)) 75%, var(--code-fg, #888) 25%);
+}
+body.code-theme-default .markdown-body .code-copy:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.markdown-body .code-copy.done {
+  color: var(--ok);
+  border-color: var(--ok);
 }
 .markdown-body pre.front-matter {
   color: var(--text-mute);

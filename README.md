@@ -11,7 +11,7 @@
 ![Electron](https://img.shields.io/badge/Electron-45-47848f?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)
 
-`文件树` · `右键新建` · `分栏实时预览` · `截图粘贴自动转存` · `Excel 表格粘贴转 Markdown` · `HTML 页面嵌入` · `图片查看器` · `代码高亮` · `GFM 任务列表` · `深浅色主题` · `字体字号设置` · `自动保存` · `同步滚动` · `外部修改自动刷新`
+`文件树` · `右键新建` · `分栏实时预览` · `截图粘贴自动转存` · `Excel 表格粘贴转 Markdown` · `HTML 页面嵌入` · `图片查看器` · `代码高亮` · `代码块复制` · `代码主题` · `GFM 任务列表` · `深浅色主题` · `字体字号设置` · `自动保存` · `同步滚动` · `外部修改自动刷新`
 
 </div>
 
@@ -69,6 +69,10 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 - **三种视图** — 仅编辑 / 分栏 / 仅预览，`Mod+1` `Mod+2` `Mod+3` 切换，分栏模式下编辑区与预览区同步滚动
 - **GFM 语法** — 表格、任务列表、删除线、围栏代码块、Front Matter
 - **代码高亮** — 基于 highlight.js，内置 JavaScript、Python、Java、Go、C/C++、SQL、Shell、JSON、YAML 等 36 种常用语言
+- **代码块一键复制** — 预览区代码块右上角显示语言，鼠标悬停出现「复制」按钮，复制的是代码原文
+- **代码块主题** — GitHub、Atom One、Visual Studio、Tokyo Night、Solarized、Gruvbox、Monokai、Dracula、Nord 等 15 种，大部分会随浅色 / 深色界面自动切换，设置中带实时示例
+
+![代码块复制与主题](docs/screenshots/code-block.png)
 - **列表续写** — 回车自动续写有序/无序/任务列表
 - **常用格式快捷键** — 加粗、斜体、行内代码、链接、引用
 - **查找替换** — 见下方 [快捷键](#快捷键)
@@ -125,12 +129,13 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 
 ### 6. 个性化设置
 
-`Mod+,` 打开设置，修改即时生效并自动保存。
+`Mod+,` 打开设置，左侧按「外观 / 编辑器 / 预览 / 文件」分类切换，修改即时生效并自动保存。
 
 | 分类 | 选项 |
 | --- | --- |
-| 外观 | 主题（跟随系统 / 浅色 / 深色）、编辑器字号、预览字号、行高、编辑器字体（等宽 / 无衬线 / 衬线）、预览字体、预览宽度（适中 860px / 宽 1200px / 铺满） |
-| 编辑器 | 行号、自动换行、缩进宽度、同步滚动、粘贴表格转 Markdown、自动保存及延迟 |
+| 外观 | 主题（跟随系统 / 浅色 / 深色）、编辑器字号、预览字号、行高、编辑器字体（等宽 / 无衬线 / 衬线）、预览字体 |
+| 编辑器 | 行号、自动换行、缩进宽度、粘贴表格转 Markdown、自动保存及延迟 |
+| 预览 | 预览宽度（适中 860px / 宽 1200px / 铺满）、同步滚动、代码块主题 |
 | 文件 | 图片 / 附件保存目录、显示隐藏文件、显示非 Markdown 文件 |
 
 字体会按平台自动选用系统字体：macOS 为 SF Mono / 苹方 / 宋体，Windows 为 Cascadia Mono、Consolas / 微软雅黑 / 宋体。
@@ -253,6 +258,7 @@ markeasy/
         │   ├── editor.js     #   编辑器、图片/表格粘贴、HTML 拖入
         │   ├── preview.js    #   Markdown 预览、iframe 嵌入（增量渲染）
         │   ├── image-resize.js#  预览区拖拽调整图片宽高并写回源码
+        │   ├── code-theme.js #   代码块高亮主题切换
         │   ├── table-paste.js#   表格 → Markdown 转换
         │   ├── image-viewer.js#  图片查看器
         │   ├── settings.js   #   设置面板
@@ -269,6 +275,11 @@ markeasy/
 ---
 
 ## 更新日志
+
+### v1.1.2（2026-11-24）
+- 新增 **代码块一键复制**：预览区代码块右上角显示语言标签，悬停出现「复制」按钮
+- 新增 **代码块主题**：设置 → 预览 → 代码块主题，15 种 highlight.js 主题可选，大部分随浅色 / 深色自动切换，带实时示例
+- 设置面板改为 **左侧纵向 Tab**（外观 / 编辑器 / 预览 / 文件），并记住上次打开的分类
 
 ### v1.1.1（2026-11-19）
 - 新增 **预览宽度** 设置：适中 860px / 宽 1200px / 铺满，大图与嵌入页面可完整显示

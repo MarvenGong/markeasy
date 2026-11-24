@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   previewFontFamily: 'system', // system | serif
   lineHeight: 1.7,
   previewWidth: 'normal', // normal(860px) | wide(1200px) | full
+  codeTheme: 'github', // 代码块高亮主题，见 renderer/js/code-theme.js
   // 编辑器
   lineNumbers: false,
   lineWrapping: true,
@@ -31,7 +32,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   sidebarWidth: 260,
   lastFolder: null,
   lastFile: null,
-  expandedDirs: []
+  expandedDirs: [],
+  settingsTab: 'appearance'
 });
 
 class SettingsStore {
@@ -66,7 +68,7 @@ class SettingsStore {
 
   reset() {
     // 只重置用户可配置项，保留界面状态
-    const keep = ['lastFolder', 'lastFile', 'expandedDirs', 'sidebarWidth', 'sidebarVisible', 'viewMode'];
+    const keep = ['lastFolder', 'lastFile', 'expandedDirs', 'sidebarWidth', 'sidebarVisible', 'viewMode', 'settingsTab'];
     const next = { ...DEFAULT_SETTINGS };
     for (const k of keep) next[k] = this.data[k];
     this.data = next;

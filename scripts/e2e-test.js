@@ -443,6 +443,62 @@ document.title = 'EMBED_OK' + leak;
     check('尺寸修改保存到磁盘', fs.readFileSync(sizeMd, 'utf8') === content);
     await js(`window.__markeasy.onMenuAction('view-mode', 'split')`);
 
+    /* ---------------- 代码块复制 / 代码主题 / 设置 Tab ---------------- */
+    const codeMd = path.join(sizeDir, '代码.md');
+    fs.writeFileSync(codeMd, '# 代码\n\n```js\nconst a = 1;\nconsole.log(a);\n```\n\n```\nplain text\n```\n\n- 列表\n\n  ```py\n  print(1)\n  ```\n');
+    await js(`window.__markeasy.openFile(${JSON.stringify(codeMd)})`);
+    await sleep(600);
+    const blocks = await js(`Array.from(document.querySelectorAll('#preview pre')).map(p => ({ btn: !!p.querySelector('.code-copy'), lang: (p.querySelector('.code-lang') || {}).textContent || '' }))`);
+    check('代码块（含列表内嵌套）显示复制按钮与语言', JSON.stringify(blocks) === '[{"btn":true,"lang":"js"},{"btn":true,"lang":""},{"btn":true,"lang":"py"}]', JSON.stringify(blocks));
+    await writeClip({ text: 'x' });
+    await js(`document.querySelector('#preview pre .code-copy').click()`);
+    await sleep(300);
+    const clip = await clipboard.readText();
+    const btnText = await js(`document.querySelector('#preview pre .code-copy').textContent`);
+    check('点击复制 → 剪贴板为代码原文（不含按钮文字）', clip === 'const a = 1;\nconsole.log(a);' && btnText === '已复制', JSON.stringify(clip) + ' ' + btnText);
+    await js(`(() => { const cm = window.__markeasy.editor.cm; cm.replaceRange('补充\\n', { line: cm.lastLine(), ch: 0 }); })()`);
+    await sleep(800);
+    const btnCount = await js(`document.querySelectorAll('#preview .code-copy').length`);
+    check('编辑后代码块不重复添加按钮', btnCount === 3, String(btnCount));
+
+    const themeInfo = (name) =>
+      js(`(async () => {
+        const m = window.__markeasy;
+        m.state.settings = await window.api.settings.set({ codeTheme: '${name}' });
+        await ME.codeTheme.apply('${name}');
+        const pre = document.querySelector('#preview pre');
+        return { href: document.getElementById('hljs-light').getAttribute('href').split('/styles/')[1], dark: document.getElementById('hljs-dark').getAttribute('href').split('/styles/')[1], bg: getComputedStyle(pre).backgroundColor, kw: getComputedStyle(pre.querySelector('.hljs-keyword')).color, def: document.body.classList.contains('code-theme-default') };
+      })()`);
+    const tGithub = await themeInfo('github');
+    const tMonokai = await themeInfo('monokai');
+    const tAtom = await themeInfo('atom-one');
+    check('代码主题切换：Monokai 背景与关键字颜色生效', tMonokai.href === 'monokai-sublime.min.css' && tMonokai.bg === 'rgb(35, 36, 31)' && tMonokai.kw !== tGithub.kw && !tMonokai.def && tGithub.def, JSON.stringify({ tGithub, tMonokai }));
+    check('代码主题：成对主题浅色/深色分别加载', tAtom.href === 'atom-one-light.min.css' && tAtom.dark === 'atom-one-dark.min.css', JSON.stringify(tAtom));
+    await themeInfo('github');
+
+    // 设置面板纵向 Tab
+    await js(`window.__markeasy.onMenuAction('open-settings')`);
+    await sleep(300);
+    const tabInfo = await js(`(() => {
+      const vis = () => Array.from(document.querySelectorAll('.settings-page')).filter(p => !p.hidden).map(p => p.dataset.page);
+      const a = vis();
+      document.querySelector('.settings-tab[data-tab="preview"]').click();
+      const b = vis();
+      const sample = !!document.querySelector('#code-theme-sample .hljs-keyword');
+      const sel = document.querySelector('select[name="codeTheme"]').value;
+      return { a, b, sample, sel, open: document.getElementById('settings-dialog').open };
+    })()`);
+    check('设置面板纵向 Tab 切换，且不关闭弹窗', JSON.stringify(tabInfo.a) === '["appearance"]' && JSON.stringify(tabInfo.b) === '["preview"]' && tabInfo.open, JSON.stringify(tabInfo));
+    check('预览页显示代码主题选项与示例代码', tabInfo.sample && tabInfo.sel === 'github', JSON.stringify(tabInfo));
+    await js(`(() => { const s = document.querySelector('select[name="codeTheme"]'); s.value = 'dracula'; s.dispatchEvent(new Event('change', { bubbles: true })); })()`);
+    await sleep(600);
+    const saved = await js(`window.api.settings.get().then(s => ({ codeTheme: s.codeTheme, tab: s.settingsTab }))`);
+    const draculaBg = await js(`getComputedStyle(document.querySelector('#preview pre')).backgroundColor`);
+    check('在设置中选择主题即时生效并保存，记住上次 Tab', saved.codeTheme === 'dracula' && saved.tab === 'preview' && draculaBg !== tGithub.bg, JSON.stringify(saved) + ' ' + draculaBg);
+    await js(`document.getElementById('settings-dialog').close()`);
+    await js(`window.api.settings.set({ codeTheme: 'github' }).then(s => { window.__markeasy.state.settings = s; window.__markeasy.preview.applySettings(s); })`);
+    await sleep(300);
+
     // 截图：分栏中的嵌入效果
     await js(`(() => { const cm = window.__markeasy.editor.cm; const v = cm.getValue(); cm.setValue(v.replace(/\\n<iframe src="assets\\/不存在[\\s\\S]*$/, '\\n')); })()`);
     await js(`window.__markeasy.save()`);

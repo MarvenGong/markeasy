@@ -374,6 +374,13 @@ function registerIpc() {
 /* ---------------------------------------------------------------- test hook */
 
 // 仅用于自动化验证：MARKEASY_TEST_SCRIPT=/path/to/script.js
+if (process.env.MARKEASY_TEST_SCRIPT) {
+  // 自测窗口被其它窗口遮挡时，Chromium 会暂停渲染（懒加载图片、iframe 不加载），导致结果不稳定
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+}
+
 function runTestHook() {
   const script = process.env.MARKEASY_TEST_SCRIPT;
   if (!script || !mainWindow) return;

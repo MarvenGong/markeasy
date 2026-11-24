@@ -217,6 +217,7 @@
         );
       });
       selectAll(root, 'input[type="checkbox"]').forEach((c) => (c.disabled = true));
+      selectAll(root, 'pre').forEach((pre) => this.prepareCodeBlock(pre));
       let out = root;
       selectAll(root, 'iframe').forEach((frame) => {
         const wrap = this.prepareIframe(frame);
@@ -294,6 +295,47 @@
       return wrap;
     }
 
+    /** 代码块：右上角显示语言与「复制」按钮 */
+    prepareCodeBlock(pre) {
+      const code = pre.querySelector(':scope > code');
+      if (!code) return;
+      pre.classList.add('code-block');
+      const m = /(?:^|\s)language-(\S+)/.exec(code.className);
+      const tools = document.createElement('div');
+      tools.className = 'code-tools';
+      tools.contentEditable = 'false';
+      if (m && !pre.classList.contains('front-matter')) {
+        const lang = document.createElement('span');
+        lang.className = 'code-lang';
+        lang.textContent = m[1];
+        tools.appendChild(lang);
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy';
+      btn.title = '复制代码';
+      btn.textContent = '复制';
+      tools.appendChild(btn);
+      pre.appendChild(tools);
+    }
+
+    async copyCode(btn) {
+      const code = btn.closest('pre').querySelector(':scope > code');
+      if (!code) return;
+      try {
+        await window.api.clipboard.writeText(code.textContent.replace(/\n$/, ''));
+        btn.textContent = '已复制';
+        btn.classList.add('done');
+      } catch (err) {
+        btn.textContent = '复制失败';
+      }
+      clearTimeout(btn._timer);
+      btn._timer = setTimeout(() => {
+        btn.textContent = '复制';
+        btn.classList.remove('done');
+      }, 1500);
+    }
+
     onEmbedAction(btn) {
       const wrap = btn.closest('.html-embed');
       const frame = wrap && wrap.querySelector('iframe');
@@ -325,6 +367,12 @@
     }
 
     onClick(e) {
+      const copyBtn = e.target.closest('.code-copy');
+      if (copyBtn) {
+        e.preventDefault();
+        this.copyCode(copyBtn);
+        return;
+      }
       const embedBtn = e.target.closest('.html-embed-bar button');
       if (embedBtn) {
         e.preventDefault();
@@ -373,6 +421,7 @@
       root.setProperty('--preview-font', ME.FONT_STACKS[s.previewFontFamily] || ME.FONT_STACKS.system);
       root.setProperty('--preview-line-height', String(s.lineHeight));
       root.setProperty('--preview-max-width', PREVIEW_WIDTHS[s.previewWidth] || PREVIEW_WIDTHS.normal);
+      ME.codeTheme.apply(s.codeTheme);
       if (this.resizer.img) this.resizer.place();
     }
   }

@@ -662,6 +662,10 @@
     settingsPanel = new ME.SettingsPanel({
       getSettings: () => state.settings,
       update: updateSettings,
+      rememberTab: (tab) => {
+        state.settings.settingsTab = tab;
+        api.settings.set({ settingsTab: tab }).catch(() => {});
+      },
       reset: async () => {
         const prev = state.settings;
         state.settings = await api.settings.reset();

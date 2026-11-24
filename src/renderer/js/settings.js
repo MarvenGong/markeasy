@@ -26,10 +26,37 @@
       this.dlg.addEventListener('click', (e) => {
         if (e.target === this.dlg) this.dlg.close();
       });
+
+      // 纵向 Tab
+      this.tabs = Array.from(this.dlg.querySelectorAll('.settings-tab'));
+      this.tabs.forEach((btn) => btn.addEventListener('click', () => this.showTab(btn.dataset.tab, true)));
+      this.dlg.querySelector('.settings-tabs').addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+        e.preventDefault();
+        const i = this.tabs.findIndex((b) => b.classList.contains('active'));
+        const next = this.tabs[(i + (e.key === 'ArrowDown' ? 1 : this.tabs.length - 1)) % this.tabs.length];
+        this.showTab(next.dataset.tab, true);
+        next.focus();
+      });
     }
 
-    open() {
+    showTab(name, remember) {
+      if (!this.tabs.some((b) => b.dataset.tab === name)) name = this.tabs[0].dataset.tab;
+      this.tabs.forEach((b) => {
+        const on = b.dataset.tab === name;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', String(on));
+        b.tabIndex = on ? 0 : -1;
+      });
+      this.dlg.querySelectorAll('.settings-page').forEach((p) => (p.hidden = p.dataset.page !== name));
+      this.dlg.querySelector('.settings-body').scrollTop = 0;
+      if (name === 'preview') ME.codeTheme.renderSample(document.querySelector('#code-theme-sample code'));
+      if (remember && this.opts.rememberTab) this.opts.rememberTab(name);
+    }
+
+    open(tab) {
       this.fill();
+      this.showTab(tab || this.opts.getSettings().settingsTab || 'appearance', !!tab);
       if (!this.dlg.open) {
         this.dlg.showModal();
         // showModal 会自动聚焦第一个按钮（关闭按钮）并显示焦点框，打开时不需要
