@@ -6,7 +6,7 @@
 
 **本地优先 · 轻量简洁 · 开箱即用 —— 跨平台的 Markdown 编辑与预览工具**
 
-![Version](https://img.shields.io/badge/MarkEasy-v1.1.1-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/badge/MarkEasy-v1.1.2-2563eb?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20Windows-1e293b?style=for-the-badge)
 ![Electron](https://img.shields.io/badge/Electron-45-47848f?style=for-the-badge&logo=electron&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)
@@ -26,8 +26,8 @@ MarkEasy 是一款基于 Electron 的桌面 Markdown 编辑器，支持 macOS �
 
 | 平台 | 架构 | 安装包（点击直接下载） |
 | --- | --- | --- |
-| **macOS** | Apple Silicon (arm64) | [MarkEasy-1.1.1-arm64.dmg](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-1.1.1-arm64.dmg) / [MarkEasy-1.1.1-arm64-mac.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-1.1.1-arm64-mac.zip) |
-| **Windows** 10 / 11 | x64 | [MarkEasy-Setup-1.1.1-x64.exe](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-Setup-1.1.1-x64.exe)（安装版） / [MarkEasy-1.1.1-win-x64.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.1/MarkEasy-1.1.1-win-x64.zip)（免安装，解压即用） |
+| **macOS** | Apple Silicon (arm64) | [MarkEasy-1.1.2-arm64.dmg](https://github.com/MarvenGong/markeasy/releases/download/v1.1.2/MarkEasy-1.1.2-arm64.dmg) / [MarkEasy-1.1.2-arm64-mac.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.2/MarkEasy-1.1.2-arm64-mac.zip) |
+| **Windows** 10 / 11 | x64 | [MarkEasy-Setup-1.1.2-x64.exe](https://github.com/MarvenGong/markeasy/releases/download/v1.1.2/MarkEasy-Setup-1.1.2-x64.exe)（安装版） / [MarkEasy-1.1.2-win-x64.zip](https://github.com/MarvenGong/markeasy/releases/download/v1.1.2/MarkEasy-1.1.2-win-x64.zip)（免安装，解压即用） |
 
 历史版本与更新说明见 [Releases](https://github.com/MarvenGong/markeasy/releases)。
 
